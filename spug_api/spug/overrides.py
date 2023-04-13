@@ -1,4 +1,4 @@
-# Database
+#  Database
 DATABASES = {
     'default': {
         'ATOMIC_REQUESTS': True,
