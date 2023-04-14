@@ -34,5 +34,6 @@ urlpatterns = [
     path('notify/', include('apps.notify.urls')),
     path('file/', include('apps.file.urls')),
     path('apis/', include('apps.apis.urls')),
-    path('minio/', include('apps.minio.urls')),
+    path('minio/', include('apps.gh.minio.urls')),
+    path('gh/user/', include('apps.gh.user.urls')),
 ]

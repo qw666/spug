@@ -2,7 +2,7 @@ from datetime import datetime
 
 from django.http import HttpResponseBadRequest, HttpResponse
 
-from apps.minio.utils import MINIO_CLIENT
+from apps.gh.minio.utils import MINIO_CLIENT
 from libs import json_response
 from spug.overrides import MINIO_STORAGE_BUCKET_NAME
 
