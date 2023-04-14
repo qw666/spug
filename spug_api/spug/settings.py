@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'apps.deploy',
     'apps.notify',
     'apps.repository',
+    'apps.gh',
     'apps.home',
     'channels',
 ]
