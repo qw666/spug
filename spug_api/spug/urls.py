@@ -37,4 +37,5 @@ urlpatterns = [
     path('gh/', include('apps.gh.urls')),
     path('minio/', include('apps.gh.minio.urls')),
     path('gh/user/', include('apps.gh.user.urls')),
+    path('gh/archery/', include('apps.gh.archery.urls')),
 ]

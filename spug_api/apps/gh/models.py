@@ -80,7 +80,7 @@ class DevelopProject(models.Model):
     # 需求ID
     test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE)
     # 部署的工程id 按94环境处理
-    deploy_id = models.ForeignKey(Deploy, on_delete=models.CASCADE)
+    deploy = models.ForeignKey(Deploy, on_delete=models.CASCADE)
     # 分支信息
     branch_name = models.CharField(max_length=100)
     # 申请时间

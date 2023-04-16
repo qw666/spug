@@ -43,7 +43,7 @@ class TestView(View):
                                     )
 
             batch_database_config = [DevelopProject(test_demand=test_demand_id,
-                                                    deploy_id=item.deploy_id,
+                                                    deploy=item.deploy_id,
                                                     branch_name=item.branch_name,
                                                     created_at=request.user
                                                     )
