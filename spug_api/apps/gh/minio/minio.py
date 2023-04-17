@@ -13,7 +13,7 @@ bucket_name = MINIO_STORAGE_BUCKET_NAME
 def upload_file(request):
     if request.method == 'POST' and request.FILES['file']:
         file = request.FILES['file']
-        prefix: str = datetime.now().strftime("%Y%m%d%H%M%S")
+        prefix: str = datetime.now().strftime("%Y%m%d%H%M%S%f")
         filename = prefix + file.name
         if not MINIO_CLIENT.bucket_exists(bucket_name):
             MINIO_CLIENT.make_bucket(bucket_name)

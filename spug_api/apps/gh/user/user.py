@@ -8,16 +8,16 @@ def list_users(request):
     role_type: str = request.GET['role_type']
     users = []
     if int(role_type) == RoleType.DEV.value:
-        for u in User.objects.filter(roles__name__contains='开发'):
-            tmp = u.to_dict(excludes=('access_token', 'password_hash'))
-            users.append(tmp)
+        for u in User.objects.filter(roles__name__contains='开发').distinct():
+             tmp = u.to_dict(selects=('id', 'username', 'nickname'))
+             users.append(tmp)
     elif int(role_type) == RoleType.TEST.value:
-        for u in User.objects.filter(roles__name__contains='测试'):
-            tmp = u.to_dict(excludes=('access_token', 'password_hash'))
+        for u in User.objects.filter(roles__name__contains='测试').distinct():
+            tmp = u.to_dict(selects=('id', 'username', 'nickname'))
             users.append(tmp)
     else:
         for u in User.objects.all():
-            tmp = u.to_dict(excludes=('access_token', 'password_hash'))
+            tmp = u.to_dict(selects=('id', 'username', 'nickname'))
             users.append(tmp)
     return json_response(users)
 

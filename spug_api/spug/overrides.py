@@ -45,4 +45,12 @@ MINIO_STORAGE_ACCESS_KEY = 'root'
 MINIO_STORAGE_SECRET_KEY = 'aUxE_MeRmjrzC4'
 MINIO_STORAGE_BUCKET_NAME = 'spug-file-bucket'
 
+# 发送邮件相关配置
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.126.com'
+EMAIL_PORT = 25
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'gohightest@126.com'
+EMAIL_HOST_PASSWORD = 'RGWDYWZKNPGLEVXV'
+
 # Archery sql 审核平台设置

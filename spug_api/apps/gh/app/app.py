@@ -17,7 +17,7 @@ def list_apps(request):
         apps = []
         deploy = Deploy.objects.filter(env_id='3')
         for d in deploy:
-            tmp = d.app.to_dict()
+            tmp = d.app.to_dict(selects=('id', 'name', 'key', 'desc'))
             tmp['deploy_id'] = d.id
             apps.append(tmp)
         return json_response(apps)
