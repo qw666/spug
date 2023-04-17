@@ -1,6 +1,5 @@
 from django.db import models
 
-from apps.app.models import Deploy
 from libs import human_datetime
 from apps.account.models import User
 
@@ -13,10 +12,10 @@ class TestDemand(models.Model):
     # 测试用例
     test_case = models.CharField(max_length=100)
     # 测试报告
-    test_report = models.FilePathField(max_length=100)
-    # 申请人
-    created_at = models.FilePathField(max_length=20, default=human_datetime)
+    test_report = models.CharField(max_length=100)
     # 申请时间
+    created_at = models.CharField(max_length=20, default=human_datetime)
+    # 申请人
     created_by = models.ForeignKey(User, models.PROTECT, related_name='+')
 
     # 提测的需求信息表 test_demand
@@ -76,13 +75,13 @@ class DevelopProject(models.Model):
     # 需求ID
     test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE)
     # 部署的工程id 按94环境处理
-    deploy = models.ForeignKey(Deploy, on_delete=models.CASCADE)
+    deploy_id = models.SmallIntegerField()
     # 工程名称
     app_name = models.CharField(max_length=100)
     # 分支信息
     branch_name = models.CharField(max_length=100)
     # 申请时间
-    created_at = models.FilePathField(max_length=20, default=human_datetime)
+    created_at = models.CharField(max_length=20, default=human_datetime)
     # 申请人
     created_by = models.ForeignKey(User, models.PROTECT, related_name='+')
 
@@ -104,6 +103,8 @@ class DatabaseConfig(models.Model):
     db_type = models.CharField(max_length=50)
     # 数据库名称
     db_name = models.CharField(max_length=50)
+    # 数据库所属组
+    group_id = models.SmallIntegerField()
     # 数据库实例
     instance = models.SmallIntegerField()
     # sql类型
@@ -111,7 +112,7 @@ class DatabaseConfig(models.Model):
     # sql内容
     sql_content = models.CharField(max_length=1000)
     # 申请时间
-    created_at = models.FilePathField(max_length=20, default=human_datetime)
+    created_at = models.CharField(max_length=20, default=human_datetime)
     # 申请人
     created_by = models.ForeignKey(User, models.PROTECT, related_name='+')
 

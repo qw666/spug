@@ -67,12 +67,11 @@ def get_auth_token(username):
 
 # 获取用户的数据库类型
 def get_instance(request):
-    form, error = JsonParser(
-        Argument('env', type=str, help='请求参数env不能为空')
-    ).parse(request.GET)
-
-    if error is not None:
-        return json_response(error=error)
+    # 获取当前操作人的角色
+    roles = request.user.roles.all()
+    env = 'prod'
+    if '测试' in roles[0].name:
+        env = 'test'
 
     username = request.user.username
 
@@ -86,7 +85,7 @@ def get_instance(request):
     }
 
     url = 'http://10.188.15.53:9123/api/v1/instance/'
-    params = {'instance_name__icontains': form.env}
+    params = {'instance_name__icontains': env}
     response = requests.get(url=url, params=params, headers=headers)
     if response.status_code != 200:
         return json_response(error='获取用户数据库实例失败，请联系管理员！')
