@@ -10,11 +10,10 @@ class TestDemand(models.Model):
     demand_name = models.CharField(max_length=50)
     # 需求链接
     demand_link = models.CharField(max_length=300)
-    # TODO 增加文件上传和下载
     # 测试用例
-    # test_case = models.CharField(max_length=100)
+    test_case = models.CharField(max_length=100)
     # 测试报告
-    # test_report = models.FilePathField(max_length=100)
+    test_report = models.FilePathField(max_length=100)
     # 申请人
     created_at = models.FilePathField(max_length=20, default=human_datetime)
     # 申请时间
@@ -29,11 +28,12 @@ class TestDemand(models.Model):
 class WorkFlow(models.Model):
     STATUS = (
         (0, '待测试'),
-        (1, '测试中'),
-        (2, '测试完成'),
-        (3, '待上线'),
-        (4, '上线中'),
-        (5, '上线完成')
+        (1, '指定测试'),
+        (2, '测试中'),
+        (3, '测试完成'),
+        (4, '待上线'),
+        (5, '上线中'),
+        (6, '上线完成')
     )
 
     SQL_EXEC_STATUS = (
@@ -44,11 +44,7 @@ class WorkFlow(models.Model):
         (4, '线上环境待执行'),
         (5, '线上环境执行中'),
         (6, '线上环境已执行'),
-        (7, '线上环境执行失败'),
-        (8, '测试环境待同步'),
-        (9, '测试环境同步中'),
-        (10, '测试环境同步成功'),
-        (11, '测试环境同步失败'),
+        (7, '线上环境执行失败')
     )
 
     # 需求ID
@@ -63,7 +59,7 @@ class WorkFlow(models.Model):
     notify_name = models.CharField(max_length=100, null=True)
     # 测试状态
     status = models.SmallIntegerField(choices=STATUS, default=0)
-    # 测试状态
+    # sql执行状态
     sql_exec_status = models.SmallIntegerField(choices=SQL_EXEC_STATUS, default=0)
     # 操作人
     created_by = models.ForeignKey(User, models.PROTECT, related_name='+')
@@ -81,6 +77,8 @@ class DevelopProject(models.Model):
     test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE)
     # 部署的工程id 按94环境处理
     deploy = models.ForeignKey(Deploy, on_delete=models.CASCADE)
+    # 工程名称
+    app_name = models.CharField(max_length=100)
     # 分支信息
     branch_name = models.CharField(max_length=100)
     # 申请时间
