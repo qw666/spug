@@ -169,3 +169,37 @@ class SqlExecute(models.Model, ModelMixin):
     class Meta:
         db_table = 'sql_execute'
         ordering = ('-id',)
+
+
+class UserExtend(models.Model, ModelMixin):
+    # 姓名
+    nickname = models.CharField(max_length=100)
+    # 邮箱
+    email = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = 'user_extend'
+        ordering = ('-id',)
+
+
+class SendRecord(models.Model, ModelMixin):
+    # 项目id
+    test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE, related_name='record')
+    # 发件人
+    sender = models.CharField(verbose_name='发件人', max_length=500)
+    # 收件人
+    receiver = models.CharField(verbose_name='收件人', max_length=500)
+    # 发送内容
+    content = models.CharField(verbose_name='发送内容', max_length=1000)
+    # 项目阶段
+    project_status = models.SmallIntegerField()
+    # 发送状态 1成功 2失败
+    send_status = models.SmallIntegerField(verbose_name='发送状态 1成功 2失败', default=1)
+    # 创建时间
+    created_at = models.CharField(max_length=20, default=human_datetime)
+    # 创建人
+    created_by = models.ForeignKey(User, models.PROTECT, related_name='+')
+
+    class Meta:
+        db_table = 'send_record'
+        ordering = ('-id',)

@@ -12,12 +12,12 @@ try:
     # 3.设置定时任务，选择方式为interval，时间间隔为10s
     # 另一种方式为每天固定时间执行任务，对应代码为：
     # @register_job(scheduler, 'cron', hour='9', minute='30', second='10',id='task_time')
-    @register_job(scheduler, "interval", seconds=3, replace_existing=True)
+    @register_job(scheduler, "interval", minutes=10, replace_existing=True)
     def my_job():
         # 这里写你要执行的任务
         print('第一个定时任务')
 
-    @register_job(scheduler, "interval", seconds=2, replace_existing=True)
+    @register_job(scheduler, "interval", seconds=600, replace_existing=True)
     def my_job2():
         print('第二个定时任务')
         pass
