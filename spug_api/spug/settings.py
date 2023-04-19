@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'apps.gh',
     'apps.home',
     'channels',
+    'django_apscheduler',
 ]
 
 MIDDLEWARE = [
