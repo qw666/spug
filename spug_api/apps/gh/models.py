@@ -1,10 +1,10 @@
 from django.db import models
 
-from libs import human_datetime
+from libs import human_datetime, ModelMixin
 from apps.account.models import User
 
 
-class TestDemand(models.Model):
+class TestDemand(models.Model, ModelMixin):
     # 需求名称
     demand_name = models.CharField(max_length=50)
     # 需求链接
@@ -24,7 +24,7 @@ class TestDemand(models.Model):
         ordering = ('-id',)
 
 
-class WorkFlow(models.Model):
+class WorkFlow(models.Model, ModelMixin):
     STATUS = (
         (0, '待测试'),
         (1, '指定测试'),
@@ -60,10 +60,10 @@ class WorkFlow(models.Model):
     status = models.SmallIntegerField(choices=STATUS, default=0)
     # sql执行状态
     sql_exec_status = models.SmallIntegerField(choices=SQL_EXEC_STATUS, default=0)
-    # 操作人
-    created_by = models.ForeignKey(User, models.PROTECT, related_name='+')
-    # 操作时间
-    created_at = models.CharField(max_length=20, default=human_datetime)
+    # 更新人
+    updated_by = models.ForeignKey(User, models.PROTECT, related_name='+')
+    # 更新时间
+    updated_at = models.CharField(max_length=20, default=human_datetime)
 
     # 提测的工作流信息表 work_flow
     class Meta:
@@ -71,9 +71,9 @@ class WorkFlow(models.Model):
         ordering = ('-id',)
 
 
-class DevelopProject(models.Model):
+class DevelopProject(models.Model, ModelMixin):
     # 需求ID
-    test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE)
+    test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE, related_name='projects')
     # 部署的工程id 按94环境处理
     deploy_id = models.SmallIntegerField()
     # 工程名称
@@ -91,14 +91,13 @@ class DevelopProject(models.Model):
         ordering = ('-id',)
 
 
-class DatabaseConfig(models.Model):
-
+class DatabaseConfig(models.Model, ModelMixin):
     SQL_TYPE = (
         (1, 'DDL'),
         (2, 'DML'),
     )
     # 需求ID
-    test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE)
+    test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE, related_name='databases')
     # 数据库类型 mysql pgsql
     db_type = models.CharField(max_length=50)
     # 数据库名称
@@ -119,4 +118,54 @@ class DatabaseConfig(models.Model):
     # 数据库sql配置表 database_config
     class Meta:
         db_table = 'database_config'
+        ordering = ('-id',)
+
+
+class SqlExecute(models.Model, ModelMixin):
+    SQL_TYPE = (
+        (1, 'DDL'),
+        (2, 'DML'),
+    )
+    SQL_EXEC_STATUS = (
+        (0, '执行中'),
+        (1, '执行成功'),
+        (2, '执行失败')
+    )
+
+    # 需求ID
+    test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE, related_name='orders')
+    # SQL审核平台的工单ID
+    order_id = models.IntegerField()
+    # 需求名称
+    demand_name = models.CharField(max_length=50)
+    # 需求链接
+    demand_link = models.CharField(max_length=300)
+    # sql类型
+    sql_type = models.SmallIntegerField(choices=SQL_TYPE)
+    # 数据库所属组
+    group_id = models.SmallIntegerField()
+    # 数据库实例
+    instance = models.SmallIntegerField()
+    # 数据库类型 mysql pgsql
+    db_type = models.CharField(max_length=50)
+    # 数据库名称
+    db_name = models.CharField(max_length=50)
+    # 是否备份
+    is_backup = models.BooleanField(default=True)
+    # 执行状态
+    status = models.SmallIntegerField(choices=SQL_EXEC_STATUS, default=0)
+    # sql内容
+    sql_content = models.CharField(max_length=1000)
+    # 申请时间
+    created_at = models.CharField(max_length=20, default=human_datetime)
+    # 申请人
+    created_by = models.ForeignKey(User, models.PROTECT, related_name='+')
+
+    """
+        执行方式 手动执行/同步执行
+    """
+
+    # 数据库sql执行表 database_config
+    class Meta:
+        db_table = 'sql_execute'
         ordering = ('-id',)

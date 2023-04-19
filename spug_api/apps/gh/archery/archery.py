@@ -6,6 +6,8 @@ import json
 import requests
 from django.core.cache import cache
 
+from apps.gh.enum import Status, OrderStatus
+from apps.gh.models import SqlExecute
 from libs import json_response, JsonParser, Argument
 
 """
@@ -62,16 +64,15 @@ def get_auth_token(username):
 
     cache.set(unique_key, token, 60 * 60 * 2)
     result['token'] = token
-    return token
+    return result
 
 
 # 获取用户的数据库类型
 def get_instance(request):
-    # 获取当前操作人的角色
-    roles = request.user.roles.all()
-    env = 'prod'
-    if '测试' in roles[0].name:
-        env = 'test'
+    # 获取当前提测申请的状态
+    status = request.GET.get('status')
+    if not status:
+        status = 4
 
     username = request.user.username
 
@@ -85,7 +86,7 @@ def get_instance(request):
     }
 
     url = 'http://10.188.15.53:9123/api/v1/instance/'
-    params = {'instance_name__icontains': env}
+    params = {'instance_name__icontains': 'test' if int(status) == Status.TESTING.value else 'prod'}
     response = requests.get(url=url, params=params, headers=headers)
     if response.status_code != 200:
         return json_response(error='获取用户数据库实例失败，请联系管理员！')
@@ -124,11 +125,11 @@ def get_resource(request):
 
 # SQL检查
 #  post
-def check(request):
+def check_sql(request):
     form, error = JsonParser(
-        Argument('instance_id', type=int, help='请求参数instance_id不能为空'),
+        Argument('instance', type=int, help='请求参数instance不能为空'),
         Argument('db_name', type=str, help='请求参数数据库名称不能为空'),
-        Argument('full_sql', type=str, help='请求参数sql内容不能为空'),
+        Argument('sql_content', type=str, help='请求参数sql内容不能为空'),
     ).parse(request.body)
 
     if error is not None:
@@ -145,8 +146,8 @@ def check(request):
     }
 
     url = 'http://10.188.15.53:9123/api/v1/workflow/sqlcheck/'
-    # payload = {'instance_id': form.instance_id, 'resource_type': 'database'}
-    response = requests.post(url=url, json=form, headers=headers)
+    payload = {'instance_id': form.instance, 'db_name': form.db_name, 'full_sql': form.sql_content}
+    response = requests.post(url=url, json=payload, headers=headers)
     if response.status_code != 200:
         return json_response(error='sql检查失败，请联系管理员！')
     """
@@ -166,4 +167,60 @@ def check(request):
 }
     """
     # TODO 增加返回对象 errlevel判断 0-正常 1-警告 2-异常
+    return json_response(response.json())
+
+
+# SQL执行
+def execute_sql(request):
+    form, error = JsonParser(
+        Argument('id', type=int, help='参数id不能为空'),
+        Argument('demand_name', help='请输入需求名称'),
+        Argument('demand_link', help='请输入需求链接'),
+        Argument('databases', type=list, help='请选择待执行的sql工程信息')
+    ).parse(request.body)
+
+    if error is not None:
+        return json_response(error=error)
+
+    # 获取当前操作人的角色
+    roles = request.user.roles.all()
+    env = 'prod'
+    if '测试' in roles[0].name:
+        env = 'test'
+
+    username = request.user.username
+
+    response_token = get_auth_token(username)
+    token = response_token.get('token')
+    if token is None:
+        return json_response(error=response_token.get('error'))
+
+    # 请求头中带有Authorization
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    url = 'http://10.188.15.53:9123/api/v1/workflow/'
+
+    for item in form.databases:
+        status = 0
+        disposition = {
+            "workflow_name": item['db_name'] + '_' + form.demand_name,
+            "demand_url": form.demand_link,
+            "group_id": item['group_id'],
+            "db_name": item['db_name'],
+            "instance": item['instance'],
+            "is_backup": True,
+            "engineer": username
+        }
+
+        payload = {'workflow': disposition, 'sql_content': item['sql_content']}
+
+        response = requests.post(url=url, json=payload, headers=headers)
+        if response.status_code != 201 or (not response.json().get('workflow')) or (
+                OrderStatus.WORKFLOW_MAN_REVIEWING.value != response.json().get('workflow').get('status')):
+            return json_response(error='sql执行失败，请联系管理员！')
+
+        archery_workflow_id = response.json().get('workflow').get('id')
+        # 调用审核接口
+
     return json_response(response.json())

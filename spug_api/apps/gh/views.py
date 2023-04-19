@@ -1,8 +1,16 @@
+from threading import Thread
+
 from django.db import transaction
 from django.views import View
 
+from apps.app.models import Deploy
+from apps.deploy.models import DeployRequest
+from apps.gh.app.app import fetch_versions
+from apps.gh.enum import Status
+from apps.gh.helper import Helper
 from apps.gh.models import TestDemand, WorkFlow, DevelopProject, DatabaseConfig
-from libs import json_response, JsonParser, Argument, auth
+from apps.repository.models import Repository
+from libs import json_response, JsonParser, Argument, auth, human_datetime
 import json
 
 
@@ -10,6 +18,7 @@ import json
 
 class TestView(View):
 
+    # 新增提测申请
     def post(self, request):
         form, error = JsonParser(
             Argument('demand_name', help='请输入需求名称'),
@@ -35,17 +44,18 @@ class TestView(View):
                                     developer_name=form.developer_name,
                                     tester_name=form.tester_name,
                                     notify_name=form.notify_name,
-                                    created_by=request.user
+                                    updated_by=request.user
                                     )
 
-            batch_database_config = [DevelopProject(test_demand=test_demand_id,
-                                                    deploy_id=item.get('deploy_id'),
-                                                    branch_name=item.get('branch_name'),
-                                                    created_by=request.user
-                                                    )
-                                     for item in form.projects]
+            batch_project_config = [DevelopProject(test_demand=test_demand_id,
+                                                   deploy_id=item.get('deploy_id'),
+                                                   app_name=item.get('app_name'),
+                                                   branch_name=item.get('branch_name'),
+                                                   created_by=request.user
+                                                   )
+                                    for item in form.projects]
 
-            DevelopProject.objects.bulk_create(batch_database_config)
+            DevelopProject.objects.bulk_create(batch_project_config)
 
             if form.databases is not None:
                 batch_database_config = [DatabaseConfig(test_demand=test_demand_id,
@@ -62,3 +72,129 @@ class TestView(View):
 
         # TODO 提交测试申请 发生邮件
         return json_response(data='success')
+
+    # 查询提测申请
+    def get(self, request):
+        test_demands = []
+        for item in TestDemand.objects.order_by('-created_at'):
+            temp = item.to_dict(excludes=('created_by_id',))
+            work_flow = item.workflow.to_dict(
+                excludes=('test_demand_id', 'is_sync', 'notify_name', 'created_by_id', 'created_at'))
+            result = dict(temp, **work_flow)
+            result['projects'] = list(item.projects.values('id', 'deploy_id', 'app_name', 'branch_name'))
+            result['databases'] = list(
+                item.databases.values('id', 'db_type', 'db_name', 'group_id', 'instance', 'sql_type',
+                                      'sql_content'))
+
+            test_demands.append(result)
+        # 处理返回值
+        return json_response(test_demands)
+
+    # 删除提测申请
+    def delete(self, request):
+        form, error = JsonParser(
+            Argument('id', type=int, help='请指定操作对象')
+        ).parse(request.GET)
+        if error is not None:
+            return json_response(error=error)
+
+        work_flow = WorkFlow.objects.filter(test_demand=form.id).first()
+
+        if not work_flow:
+            return json_response(error='未找到指定对象')
+
+        if work_flow.status == Status.UNDER_TEST.value or work_flow.status == Status.DELEGATE_TEST.value:
+            TestDemand.objects.filter(pk=form.id).delete()
+        else:
+            return json_response(error='该条提测申请不允许被删除！')
+
+        return json_response(data='success')
+
+    # 测试完成提交
+    def patch(self, request):
+        form, error = JsonParser(
+            Argument('id', type=int, help='参数id不能为空'),
+            Argument('test_case', type=str, help='测试报告不能为空'),
+            Argument('test_report', type=str, help='测试用例不能为空')
+        ).parse(request.body)
+        if error is not None:
+            return json_response(error=error)
+
+        TestDemand.objects.filter(pk=form.id).update(test_case=form.test_case,
+                                                     test_report=form.test_report)
+
+        WorkFlow.objects.filter(test_demand=form.id).update(status=Status.COMPLETE_TEST.value,
+                                                            updated_by=request.user,
+                                                            updated_at=human_datetime())
+        return json_response(data='success')
+
+
+class WorkFlowView(View):
+
+    # 指定测试/重新测试/上线/上线完成
+    # status 是当前工单的执行状态 指定测试为1 重新测试为2 上线为4  上线完成为6
+    def patch(self, request):
+        form, error = JsonParser(
+            Argument('id', type=int, help='参数id不能为空'),
+            Argument('status', type=int, help='参数status不能为空'),
+            Argument('tester_name', required=False),
+            Argument('notify_name', required=False)
+        ).parse(request.body)
+        if error is not None:
+            return json_response(error=error)
+
+        work_flow = WorkFlow.objects.filter(test_demand=form.id).first()
+        if not work_flow:
+            return json_response(error='未找到指定对象')
+
+        work_flow.status = form.status
+        work_flow.updated_by = request.user
+        work_flow.updated_at = human_datetime()
+        if form.tester_name:
+            work_flow.tester_name = form.tester_name
+        if form.notify_name:
+            work_flow.notify_name = form.notify_name
+
+        work_flow.save()
+
+        return json_response(data='success')
+
+    # 运维上线申请
+    def get(self, request):
+        form, error = JsonParser(
+            Argument('id', type=int, help='参数id不能为空'),
+            Argument('type', default='1'),
+            Argument('plan', required=False),
+            Argument('desc', required=False),
+        ).parse(request.GET)
+        if error is not None:
+            return json_response(error=error)
+
+        test_demand = TestDemand.objects.filter(pk=form.id).first()
+
+        projects = DevelopProject.objects.filter(test_demand=form.id)
+
+        for item in projects:
+            deploy = Deploy.objects.get(pk=item.deploy_id)
+            if not deploy:
+                return json_response(error='未找到指定应用')
+            if deploy.extend == '2':
+                return json_response(error='该应用不支持此操作')
+
+            form.deploy_id = item.deploy_id
+            form.host_ids = deploy.host_ids
+            form.name = item.app_name + '_' + test_demand.demand_name
+            form.status = '0' if deploy.is_audit else '1'
+            form.spug_version = Repository.make_spug_version(item.deploy_id)
+            # 获取最新发布版本
+            branches, tags = fetch_versions(deploy)
+            version = branches[item.branch_name][0]['id']
+            form.version = f'{item.branch_name}#{version[:6]}'
+
+            form.extra = json.dumps(['branch', item.branch_name, version])
+
+            req = DeployRequest.objects.create(created_by=request.user, **form)
+            is_required_notify = deploy.is_audit
+            if is_required_notify:
+                Thread(target=Helper.send_deploy_notify, args=(req, 'approve_req')).start()
+        return json_response(error=error)
