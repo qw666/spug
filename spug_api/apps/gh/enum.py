@@ -25,6 +25,36 @@ class Status(Enum):
     COMPLETE_ONLINE = 6
 
 
+# 提测申请sql执行状态枚举类
+class ExecuteStatus(Enum):
+    # 测试环境待执行
+    TEST_WAITING = 0
+    # 测试环境执行中
+    TEST_EXECUTING = 1
+    # 测试环境已执行
+    TEST_FINISH = 2
+    # 测试环境执行失败
+    TEST_EXCEPTION = 3
+    # 线上环境待执行
+    PROD_WAITING = 4
+    # 线上环境执行中
+    PROD_EXECUTING = 5
+    # 线上环境已执行
+    PROD_FINISH = 6
+    # 线上环境执行失败
+    PROD_EXCEPTION = 7
+
+
+# sql执行状态枚举类
+class SqlExecuteStatus(Enum):
+    # 待执行
+    EXECUTING = 0
+    # 成功
+    SUCCESS = 1
+    # 失败
+    FAILURE = 2
+
+
 # archery sql 审核平台的SQL工单枚举类
 class OrderStatus(Enum):
     # 已正常结束
