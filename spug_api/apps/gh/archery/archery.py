@@ -3,11 +3,13 @@
 # http://10.188.15.53:9123/api/auth/token/
 import json
 import logging
+import time
 
 import requests
 from django.core.cache import cache
+from django.db.models import Max
 
-from apps.gh.enum import Status, OrderStatus, ExecuteStatus, SqlExecuteStatus
+from apps.gh.enum import Status, OrderStatus, ExecuteStatus, SqlExecuteStatus, SyncStatus
 from apps.gh.models import WorkFlow, SqlExecute, TestDemand
 from libs import json_response, JsonParser, Argument, human_datetime
 
@@ -154,12 +156,20 @@ def execute_sql(request):
         'Authorization': f'Bearer {token}'
     }
 
-    # 清空当前工单对应的sql执行表
-    SqlExecute.objects.filter(test_demand=form.id).delete()
     sql_exec_status = ExecuteStatus.TEST_EXECUTING.value if Status.TESTING.value == form.status else ExecuteStatus.PROD_EXECUTING.value
+    workflow_status = Status.ONLINE.value if Status.UNDER_ONLINE.value == form.status else Status.TESTING.value
 
     try:
         for item in form.databases:
+            # 针对执行成功的过滤 不再执行
+            if not item.get('id'):
+                execute = SqlExecute.objects.filter(pk=item.get('id'), status=SqlExecuteStatus.SUCCESS.value)
+                if execute:
+                    continue
+                else:
+                    # 删除执行中和执行失败的sql记录
+                    execute.delete()
+
             # 调用sql提交接口
             url, payload = build_workflow_submit(form, item, username)
             response = requests.post(url=url, json=payload, headers=headers)
@@ -200,7 +210,7 @@ def execute_sql(request):
                     create_sql_execute(order_id, SqlExecuteStatus.FAILURE.value, form, item, request)
 
                     return json_response(error='sql执行失败，请联系管理员！')
-            create_sql_execute(order_id, SqlExecuteStatus.SUCCESS.value, form, item, request)
+            create_sql_execute(order_id, SqlExecuteStatus.EXECUTING.value, form, item, request)
         return json_response(data='success')
     except Exception as e:
         logging.error(e)
@@ -213,6 +223,7 @@ def execute_sql(request):
     finally:
         # 更新当前的提测申请的sql执行状态
         work_flow = WorkFlow.objects.filter(test_demand=form.id).first()
+        work_flow.status = workflow_status
         work_flow.sql_exec_status = sql_exec_status
         work_flow.updated_by = request.user
         work_flow.updated_at = human_datetime()
@@ -220,9 +231,15 @@ def execute_sql(request):
 
 
 def create_sql_execute(order_id, status, form, item, request):
-    test_demand_id = TestDemand.objects.filter(pk=form.id).first()
-    SqlExecute.objects.create(test_demand=test_demand_id,
+    # 更新当前的提测申请的sql执行状态
+    if form.status == Status.TESTING.value:
+        env = 'test'
+    else:
+        env = 'prod'
+    workflow_id = WorkFlow.objects.filter(test_demand=form.id).first()
+    SqlExecute.objects.create(test_demand=workflow_id,
                               order_id=order_id,
+                              sync_env=env,
                               demand_name=item.get('db_name') + '_' + form.demand_name,
                               demand_link=form.demand_link,
                               sql_type=item.get('sql_type'),
@@ -264,9 +281,9 @@ def build_workflow_audit(archery_workflow_id):
 
 def build_workflow_submit(form, item, username):
     url = 'http://10.188.15.53:9123/api/v1/workflow/'
-
+    time_stamp = int(time.time())
     disposition = {
-        "workflow_name": item['db_name'] + '_' + form.demand_name,
+        "workflow_name": time_stamp + item['db_name'] + form.demand_name,
         "demand_url": form.demand_link,
         "group_id": item['group_id'],
         "db_name": item['db_name'],
@@ -277,3 +294,76 @@ def build_workflow_submit(form, item, username):
 
     payload = {'workflow': disposition, 'sql_content': item['sql_content']}
     return url, payload
+
+
+# 获取sql执行结果
+def get_workflow_result(request):
+    # 先筛选需要更新的数据  更新sql执行状态
+    executing_sql = list(SqlExecute.objects.filter(status=SqlExecuteStatus.EXECUTING.value))
+
+    response_token = get_auth_token('chenqi')
+    token = response_token.get('token')
+    if token is None:
+        return json_response(error=response_token.get('error'))
+    # 请求头中带有Authorization
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    url = 'http://10.188.15.53:9123/api/v1/workflow/?page=1&size=1000'
+    status_dict = dict()
+    workflow_ids = set()
+    for item in executing_sql:
+        params = {'workflow_id': item.get('order_id')}
+        response = requests.get(url=url, params=params, headers=headers)
+
+        if response.status_code != 200:
+            logging.warning('定时任务:sql工单:' + item.get('demand_name') + '的执行状态失败')
+            return
+        elif response.json()['count'] == 0:
+            logging.warning('定时任务:sql工单:' + item.get('demand_name') + '无需同步')
+            return
+
+        status = response.json()['results'][0]['workflow']['status']
+        if OrderStatus.WORKFLOW_FINISH.value == status:
+            item.status = SqlExecuteStatus.SUCCESS.value
+        elif OrderStatus.WORKFLOW_ABORT.value == status or OrderStatus.WORKFLOW_AUTO_REVIEW_WRONG.value == status or OrderStatus.WORKFLOW_EXCEPTION.value == status:
+            item.status = SqlExecuteStatus.FAILURE.value
+        else:
+            continue
+        item.save
+
+        if status_dict[item.get('test_demand_id')]:
+            status_dict.get(item.get('test_demand_id')).add(item.status)
+        else:
+            status_dict[item.get('test_demand_id')] = {item.status}
+        workflow_ids.add(item.get('workflow_id'))
+
+    # 更新workflow
+    for workflow_id in workflow_ids:
+        aggregate = SqlExecute.objects.filter(workflow_id=workflow_id).aggregate(max=Max('status'))
+        max_status = aggregate.get('max')
+        workflow = WorkFlow.objects.filter(pk=workflow_id).first()
+        if workflow.get('is_sync') == SyncStatus.WAITING_SYNCHRONIZE.value:
+            if workflow.get('status') == Status.ONLINE.value:
+                if max_status == SqlExecuteStatus.FAILURE.value:
+                    workflow.sql_exec_status = ExecuteStatus.PROD_EXCEPTION.value
+                elif max_status == SqlExecuteStatus.SUCCESS.value:
+                    workflow.sql_exec_status = ExecuteStatus.PROD_FINISH.value
+                else:
+                    workflow.sql_exec_status = ExecuteStatus.PROD_EXECUTING.value
+            elif workflow.get('status') == Status.TESTING.value:
+                if max_status == SqlExecuteStatus.FAILURE.value:
+                    workflow.sql_exec_status = ExecuteStatus.TEST_EXCEPTION.value
+                elif max_status == SqlExecuteStatus.SUCCESS.value:
+                    workflow.sql_exec_status = ExecuteStatus.TEST_FINISH.value
+                else:
+                    workflow.sql_exec_status = ExecuteStatus.TEST_EXECUTING.value
+        else:
+            if max_status == SqlExecuteStatus.FAILURE.value:
+                workflow.is_sync = SyncStatus.SYNCHRONIZE_EXCEPTION.value
+            elif max_status == SqlExecuteStatus.SUCCESS.value:
+                workflow.is_sync = SyncStatus.SYNCHRONIZE_FINISH.value
+            else:
+                workflow.is_sync = SyncStatus.SYNCHRONIZING.value
+
+        workflow.save()

@@ -43,11 +43,15 @@ class ExecuteStatus(Enum):
     PROD_FINISH = 6
     # 线上环境执行失败
     PROD_EXCEPTION = 7
+    # 同步环境执行中
+    PROD_EXCEPTION = 7
+    # 同步环境执行已执行
+    PROD_EXCEPTION = 7
 
 
 # sql执行状态枚举类
 class SqlExecuteStatus(Enum):
-    # 待执行
+    # 执行中
     EXECUTING = 0
     # 成功
     SUCCESS = 1
@@ -75,3 +79,15 @@ class OrderStatus(Enum):
     WORKFLOW_AUTO_REVIEW_WRONG = 'workflow_autoreviewwrong'
     # 执行有异常
     WORKFLOW_EXCEPTION = 'workflow_exception'
+
+
+# 提测申请同步测试状态枚举类
+class SyncStatus(Enum):
+    # 待同步
+    WAITING_SYNCHRONIZE = 0
+    # 同步中
+    SYNCHRONIZING = 1
+    # 同步完成
+    SYNCHRONIZE_FINISH = 2
+    # 同步失败
+    SYNCHRONIZE_EXCEPTION = 3

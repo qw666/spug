@@ -46,10 +46,17 @@ class WorkFlow(models.Model, ModelMixin):
         (7, '线上环境执行失败')
     )
 
+    SYNC_STATUS = (
+        (0, '待同步'),
+        (1, '同步中'),
+        (2, '同步完成'),
+        (3, '同步失败')
+    )
+
     # 需求ID
     test_demand = models.OneToOneField(TestDemand, on_delete=models.CASCADE)
     # 是否同步测试环境
-    is_sync = models.BooleanField(default=False)
+    is_sync = models.SmallIntegerField(choices=SYNC_STATUS, default=0)
     # 开发人员
     developer_name = models.CharField(max_length=100)
     # 测试人员
@@ -133,7 +140,7 @@ class SqlExecute(models.Model, ModelMixin):
     )
 
     # 需求ID
-    test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE, related_name='orders')
+    workflow = models.ForeignKey(WorkFlow, on_delete=models.CASCADE, related_name='orders')
     # SQL审核平台的工单ID
     order_id = models.IntegerField()
     # 需求名称
@@ -142,6 +149,8 @@ class SqlExecute(models.Model, ModelMixin):
     demand_link = models.CharField(max_length=300)
     # sql类型
     sql_type = models.SmallIntegerField(choices=SQL_TYPE)
+    # 执行环境 test/prod
+    env = models.CharField(max_length=5)
     # 数据库所属组
     group_id = models.SmallIntegerField()
     # 数据库实例
@@ -161,11 +170,7 @@ class SqlExecute(models.Model, ModelMixin):
     # 申请人
     created_by = models.ForeignKey(User, models.PROTECT, related_name='+')
 
-    """
-        执行方式 手动执行/同步执行
-    """
-
-    # 数据库sql执行表 database_config
+    # 数据库sql执行表 sql_execute
     class Meta:
         db_table = 'sql_execute'
         ordering = ('-id',)
