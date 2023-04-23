@@ -90,9 +90,8 @@ class SyncStatus(Enum):
     WAITING_SYNCHRONIZE = 0
     # 同步中
     SYNCHRONIZING = 1
-    # 部分完成
-    SYNCHRONIZE_PARTIALLY_FINISH = 2
+    # 同步完成
+    SYNCHRONIZE_FINISH = 2
     # 同步失败
     SYNCHRONIZE_EXCEPTION = 3
-    # 全部同步完成
-    SYNCHRONIZE_FINISH = 4
+

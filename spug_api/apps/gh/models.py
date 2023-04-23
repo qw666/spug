@@ -56,8 +56,10 @@ class WorkFlow(models.Model, ModelMixin):
 
     # 需求ID
     test_demand = models.OneToOneField(TestDemand, on_delete=models.CASCADE)
-    # 是否同步测试环境
-    is_sync = models.SmallIntegerField(choices=SYNC_STATUS, default=0)
+    # 是否同步完成
+    is_sync = models.BooleanField(default=False)
+    # 同步状态
+    sync_status = models.SmallIntegerField(choices=SYNC_STATUS, default=0)
     # 开发人员
     developer_name = models.CharField(max_length=100)
     # 测试人员

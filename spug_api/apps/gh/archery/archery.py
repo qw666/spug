@@ -325,7 +325,7 @@ def get_workflow_result(request):
 
     # 更新workflow
     for workflow_id in workflow_ids:
-        aggregate = SqlExecute.objects.filter(workflow_id=workflow_id).aggregate(max=Max('status'), )
+        aggregate = SqlExecute.objects.filter(workflow_id=workflow_id).aggregate(max=Max('status'))
         max_status = aggregate.get('max')
         workflow = WorkFlow.objects.filter(pk=workflow_id).first()
         if workflow.get('is_sync') == SyncStatus.WAITING_SYNCHRONIZE.value:

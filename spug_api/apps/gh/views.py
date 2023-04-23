@@ -254,26 +254,28 @@ def sync_deploy_status():
     for item in list(need_sync_workflow):
         deploy_request_ids = DevelopProject.objects.filter(test_demand=item.test_demand_id).values(
             'deploy_request_id').values()
-        # DeployRequest.objects.
+        deploy_status_list = DeployRequest.objects.values_list('status', flat=True).filter(
+            pk__in=deploy_request_ids)
+        if set(deploy_status_list) == {3}:
+            item.is_sync = True
+            item.save()
 
-    pass
+    # TODO 是否发送邮件
 
 
 # 定时任务 通知发布的人
 def sync_deploy_status():
-    # 获取需要通知的状态
+    # 获取需要通知的提测申请
     need_sync_workflow = WorkFlow.objects.filter(status=Status.ONLINE.COMPLETE_ONLINE.value,
-                                                 is_sync__lt=SyncStatus.SYNCHRONIZE_FINISH.value)
-
-
-
-
+                                                 is_sync=False)
     for item in list(need_sync_workflow):
-        executes = list(SqlExecute.objects.filter(workflow=workflow.id, env='test'))
+        # item.orders.
+        executes = list(SqlExecute.objects.filter(workflow=item.get('workflow.id'), env='test'))
         sync_env = {item.get('db_name').split(sep='_')[-1] for item in executes}
+        if {230, 231, 232, 233}.difference(sync_env):
+            print('没有同步完成')
+        else:
+            item.is_sync = True
+            item.save()
 
-        deploy_request_ids = DevelopProject.objects.filter(test_demand=item.test_demand_id).values(
-            'deploy_request_id').values()
-        # DeployRequest.objects.
-
-    pass
+    # TODO 是否发送邮件
