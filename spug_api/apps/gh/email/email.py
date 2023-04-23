@@ -41,8 +41,8 @@ def send_email(subject, message, recipient_list, file_names, record_item):
         email.send()
         # 更新到发送记录表
         if record_item:
-            content = f'主题:{subject} \n 内容：{message} \n 对应的文件附件：{file_names}' \
-                if file_names else f'主题:{subject} \n 内容：{message}'
+            content = f'主题:{subject}\n内容：{message}\n对应的文件附件：{file_names}' \
+                if file_names else f'主题:{subject}\n内容：{message}'
             SendRecord.objects.create(
                 sender=settings.EMAIL_HOST_USER,
                 receiver=recipient_list,
@@ -56,8 +56,8 @@ def send_email(subject, message, recipient_list, file_names, record_item):
     except Exception as e:
         # 更新到发送记录表
         if record_item:
-            content = f'主题:{subject} \n 内容：{message} \n 对应的文件附件：{file_names}'\
-                if file_names else f'主题:{subject} \n 内容：{message}'
+            content = f'主题:{subject}\n内容：{message}\n对应的文件附件：{file_names}'\
+                if file_names else f'主题:{subject}\n内容：{message}'
             SendRecord.objects.create(
                 sender=settings.EMAIL_HOST_USER,
                 receiver=recipient_list,

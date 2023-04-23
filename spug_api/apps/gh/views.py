@@ -73,7 +73,7 @@ class TestView(View):
                 DatabaseConfig.objects.bulk_create(batch_database_config)
 
         # TODO 提交测试申请 发生邮件
-        subject = f'{test_demand_id.demand_name}提测申请'
+        subject = f'【spug通知】{test_demand_id.demand_name}提测申请'
         message = f'{test_demand_id.demand_name}提测申请，请前往指定测试人员'
         recipient_list = work_flow.notify_name.split(",")
         file_names = None
@@ -139,7 +139,7 @@ class TestView(View):
                                                                         updated_by=request.user,
                                                                         updated_at=human_datetime())
 
-        subject = f'{test_demand.demand_name}测试完成'
+        subject = f'【spug通知】{test_demand.demand_name}测试完成通知'
         message = f'{test_demand.demand_name}已经测试完成，请合代码部署到线上环境'
         recipient_list = work_flow.notify_name.split(",")
         file_names = [test_demand.test_case, test_demand.test_report]
@@ -184,11 +184,11 @@ class WorkFlowView(View):
         if work_flow.status in [Status.DELEGATE_TEST.value, Status.COMPLETE_ONLINE.value]:
             test_demand = TestDemand.objects.filter(pk=form.id).first()
             if work_flow.status == Status.DELEGATE_TEST.value:
-                subject = f'{test_demand.demand_name}待测试'
+                subject = f'【spug通知】{test_demand.demand_name}待测试'
                 message = f'{test_demand.demand_name}待测试'
                 file_names = None
             else:
-                subject = f'{test_demand.demand_name}上线通知'
+                subject = f'【spug通知】{test_demand.demand_name}上线通知'
                 message = f'{test_demand.demand_name}已经部署到线上环境，请验证'
                 file_names = None
 
