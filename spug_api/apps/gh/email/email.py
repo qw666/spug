@@ -24,6 +24,7 @@ def send_email_req(request):
         }
         return send_email(subject, message, recipient_list, file_names, record_item)
 
+
 # 供内部调用
 def send_email(subject, message, recipient_list, file_names, record_item):
     email = EmailMessage(
@@ -33,8 +34,8 @@ def send_email(subject, message, recipient_list, file_names, record_item):
         reply_to=[settings.EMAIL_HOST_USER],
     )
 
-    email.to = list(UserExtend.objects.values_list('email', flat=True).filter(nickname__in=recipient_list))
     try:
+        email.to = list(UserExtend.objects.values_list('email', flat=True).filter(nickname__in=recipient_list))
         if file_names:
             for file_name in file_names:
                 file_data = MINIO_CLIENT.get_object(MINIO_STORAGE_BUCKET_NAME, file_name)
@@ -57,7 +58,7 @@ def send_email(subject, message, recipient_list, file_names, record_item):
     except Exception as e:
         # 更新到发送记录表
         if record_item:
-            content = f'主题:{subject}\n内容：{message}\n对应的文件附件：{file_names}'\
+            content = f'主题:{subject}\n内容：{message}\n对应的文件附件：{file_names}' \
                 if file_names else f'主题:{subject}\n内容：{message}'
             SendRecord.objects.create(
                 sender=settings.EMAIL_HOST_USER,
