@@ -119,12 +119,9 @@ def build_resource_result(resources):
 
 
 # SQL检查
-#  post
 def check_sql(request):
     form, error = JsonParser(
-        Argument('instance', type=int, help='请求参数instance不能为空'),
-        Argument('db_name', type=str, help='请求参数数据库名称不能为空'),
-        Argument('sql_content', type=str, help='请求参数sql内容不能为空'),
+        Argument('databases', type=list, help='请求参数sql内容不能为空'),
     ).parse(request.body)
 
     if error is not None:
@@ -140,13 +137,41 @@ def check_sql(request):
         'Authorization': f'Bearer {token}'
     }
 
-    url = 'http://10.188.15.53:9123/api/v1/workflow/sqlcheck/'
-    payload = {'instance_id': form.instance, 'db_name': form.db_name, 'full_sql': form.sql_content}
-    response = requests.post(url=url, json=payload, headers=headers)
-    if response.status_code != 200:
-        return json_response(error='sql检查失败，请联系管理员！')
-    # TODO 增加返回对象 errlevel判断 0-正常 1-警告 2-异常
-    return json_response(response.json())
+    result = dict()
+    error_count = 0
+    warning_group = list()
+    error_group = list()
+    for item in form.databases:
+        payload = {'instance_id': item.get('instance_id'), 'db_name': item.get('db_name'),
+                   'full_sql': item.get('full_sql')}
+        response = requests.post(url=settings.CHECK_SQL_URL, json=payload, headers=headers)
+        if response.status_code != 200:
+            return json_response(error='sql检查失败，请联系管理员！')
+
+        error_count += build_check_sql(response.json().get('rows'), error_group, warning_group)
+    result['error_count'] = error_count
+    result['warning_group'] = warning_group
+    result['error_group'] = error_group
+
+    return json_response(result)
+
+
+def build_check_sql(rows, error_group, warning_group):
+    error_count = 0
+    for row in rows:
+        error_level = row.get('errlevel')
+        if error_level == 0:
+            continue
+        temp = dict()
+        temp['sql'] = row.get('sql')
+        temp['message'] = row.get('errormessage')
+
+        if error_level == 1:
+            warning_group.append(temp)
+        else:
+            error_count += 1
+            error_group.append(temp)
+    return error_count
 
 
 # SQL执行

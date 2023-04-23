@@ -1,7 +1,6 @@
 from threading import Thread
 
 from django.db import transaction
-from django.db.models import Q
 from django.views import View
 
 from apps.app.models import Deploy
@@ -72,7 +71,7 @@ class TestView(View):
                                          for item in form.databases]
                 DatabaseConfig.objects.bulk_create(batch_database_config)
 
-        # TODO 提交测试申请 发生邮件
+        # 提交测试申请 发生邮件
         subject = f'【spug通知】{test_demand_id.demand_name}提测申请'
         message = f'{test_demand_id.demand_name}提测申请，请前往指定测试人员'
         recipient_list = work_flow.notify_name.split(",")
@@ -91,7 +90,8 @@ class TestView(View):
         for item in TestDemand.objects.order_by('-created_at'):
             temp = item.to_dict(excludes=('created_by_id',))
             work_flow = item.workflow.to_dict(
-                excludes=('test_demand_id', 'is_sync', 'notify_name', 'created_by_id', 'created_at'))
+                excludes=(
+                    'id', 'test_demand_id', 'is_sync', 'sync_status', 'notify_name', 'created_by_id', 'created_at'))
             result = dict(temp, **work_flow)
             result['projects'] = list(item.projects.values('id', 'deploy_id', 'app_name', 'branch_name'))
             result['databases'] = list(
