@@ -4,7 +4,7 @@ from django.core.mail import EmailMessage
 
 from apps.gh.enum import SendStatus
 from apps.gh.minio.utils import MINIO_CLIENT
-from apps.gh.models import SendRecord, TestDemand
+from apps.gh.models import SendRecord, TestDemand, UserExtend
 from libs import json_response
 from spug import settings
 from spug.overrides import MINIO_STORAGE_BUCKET_NAME
@@ -30,9 +30,10 @@ def send_email(subject, message, recipient_list, file_names, record_item):
         subject=subject,
         body=message,
         from_email=settings.EMAIL_HOST_USER,
-        to=recipient_list,
         reply_to=[settings.EMAIL_HOST_USER],
     )
+
+    email.to = list(UserExtend.objects.values_list('email', flat=True).filter(nickname__in=recipient_list))
     try:
         if file_names:
             for file_name in file_names:
