@@ -85,7 +85,7 @@ class DevelopProject(models.Model, ModelMixin):
     # 需求ID
     test_demand = models.ForeignKey(TestDemand, on_delete=models.CASCADE, related_name='projects')
     # 发布申请的ID
-    deploy_request = models.OneToOneField(DeployRequest, on_delete=models.CASCADE, related_name='requests')
+    deploy_request_id = models.IntegerField()
     # 部署的工程id 按94环境处理
     deploy_id = models.SmallIntegerField()
     # 工程名称
