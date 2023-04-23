@@ -1,15 +1,16 @@
 from threading import Thread
 
 from django.db import transaction
+from django.db.models import Q
 from django.views import View
 
 from apps.app.models import Deploy
 from apps.deploy.models import DeployRequest
 from apps.gh.app.app import fetch_versions
 from apps.gh.email.email import send_email
-from apps.gh.enum import Status
+from apps.gh.enum import Status, ExecuteStatus, SyncStatus
 from apps.gh.helper import Helper
-from apps.gh.models import TestDemand, WorkFlow, DevelopProject, DatabaseConfig
+from apps.gh.models import TestDemand, WorkFlow, DevelopProject, DatabaseConfig, SqlExecute
 from apps.repository.models import Repository
 from libs import json_response, JsonParser, Argument, auth, human_datetime
 import json
@@ -242,3 +243,37 @@ class WorkFlowView(View):
             if is_required_notify:
                 Thread(target=Helper.send_deploy_notify, args=(req, 'approve_req')).start()
         return json_response(error=error)
+
+
+# 定时任务 获取发布状态
+def sync_deploy_status():
+    # 获取需要同步的状态
+    need_sync_workflow = WorkFlow.objects.filter(status=Status.ONLINE.ONLINE.value,
+                                                 sql_exec_status=ExecuteStatus.PROD_FINISH.value)
+
+    for item in list(need_sync_workflow):
+        deploy_request_ids = DevelopProject.objects.filter(test_demand=item.test_demand_id).values(
+            'deploy_request_id').values()
+        # DeployRequest.objects.
+
+    pass
+
+
+# 定时任务 通知发布的人
+def sync_deploy_status():
+    # 获取需要通知的状态
+    need_sync_workflow = WorkFlow.objects.filter(status=Status.ONLINE.COMPLETE_ONLINE.value,
+                                                 is_sync__lt=SyncStatus.SYNCHRONIZE_FINISH.value)
+
+
+
+
+    for item in list(need_sync_workflow):
+        executes = list(SqlExecute.objects.filter(workflow=workflow.id, env='test'))
+        sync_env = {item.get('db_name').split(sep='_')[-1] for item in executes}
+
+        deploy_request_ids = DevelopProject.objects.filter(test_demand=item.test_demand_id).values(
+            'deploy_request_id').values()
+        # DeployRequest.objects.
+
+    pass

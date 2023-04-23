@@ -389,13 +389,11 @@ class SyncView(View):
         # 校验sql哪些环境执行 和执行顺序
         workflow = WorkFlow.objects.filter(test_demand=form.id).first()
 
-        need_sync_workflow = WorkFlow.objects.filter(status=Status.COMPLETE_ONLINE.ONLINE, is_sync=0)
+        need_sync_workflow = WorkFlow.objects.filter(status=Status.COMPLETE_ONLINE.ONLINE.value, is_sync=0)
         for item in list(need_sync_workflow):
+            # parse_time
             if item.updated_at < workflow.updated_at:
                 return json_response(error='请先同步' + workflow.test_demand.demand_name)
-
-        # executes = list(SqlExecute.objects.filter(workflow=workflow.id, env='test'))
-        # sync_env = {item.get('db_name').split(sep='_')[-1] for item in executes}
 
         difference_set = set(form.sync_envs).difference(set(form.sync_finish))
         if not difference_set:
@@ -551,3 +549,5 @@ def update_execute_sql(order_id, status, username, execute):
     execute.order_id = order_id
     execute.created_by = username
     execute.save()
+
+
