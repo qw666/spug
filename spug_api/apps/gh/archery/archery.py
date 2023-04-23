@@ -11,8 +11,9 @@ from django.db.models import Max
 from django.views import View
 
 from apps.gh.enum import Status, OrderStatus, ExecuteStatus, SqlExecuteStatus, SyncStatus
-from apps.gh.models import WorkFlow, SqlExecute, TestDemand, DatabaseConfig
+from apps.gh.models import WorkFlow, SqlExecute, DatabaseConfig
 from libs import json_response, JsonParser, Argument, human_datetime
+from spug import settings
 
 
 # 获取sql审核平台token
@@ -25,10 +26,8 @@ def get_auth_token(username):
         result['token'] = cache_token
         return result
 
-    url = 'http://10.188.15.53:9123/api/auth/token/'
-    password = 'gohigh@123'
-    payload = {'username': username, 'password': password}
-    response = requests.post(url=url, json=payload)
+    payload = {'username': username, 'password': settings.ARCHERY_SQL_PASSWORD}
+    response = requests.post(url=settings.GET_AUTH_TOKEN_URL, json=payload)
 
     if response.status_code != 200:
         result['error'] = '调用SQL审核平台服务异常，请联系管理员。'
@@ -64,14 +63,25 @@ def get_instance(request):
         'Authorization': f'Bearer {token}'
     }
 
-    url = 'http://10.188.15.53:9123/api/v1/instance/'
-    params = {'instance_name__icontains': 'test' if int(status) == Status.TESTING.value else 'prod'}
-    response = requests.get(url=url, params=params, headers=headers)
+    params = {'instance_name__icontains': settings.DATABASE_TEST_ENV if int(
+        status) == Status.TESTING.value else settings.DATABASE_PROD_ENV}
+    response = requests.get(url=settings.GET_INSTANCE_URL, params=params, headers=headers)
     if response.status_code != 200:
         return json_response(error='获取用户数据库实例失败，请联系管理员！')
 
-    # TODO 增加返回对象
-    return json_response(response.json().get('results'))
+    return json_response(build_instance_result(response.json().get('results')))
+
+
+def build_instance_result(instances):
+    result = list()
+    for item in instances:
+        instance = dict()
+        instance['id'] = item.get('id')
+        instance['instance_name'] = item.get('instance_name')
+        instance['db_type'] = item.get('db_type')
+        instance['resource_group'] = item.get('resource_group')
+        result.append(instance)
+    return result
 
 
 # 获取数据库实例下的资源信息
@@ -92,14 +102,20 @@ def get_resource(request):
     headers = {
         'Authorization': f'Bearer {token}'
     }
-    url = 'http://10.188.15.53:9123/api/v1/instance/resource/'
     payload = {'instance_id': form.instance_id, 'resource_type': 'database'}
-    response = requests.post(url=url, json=payload, headers=headers)
+    response = requests.post(url=settings.GET_RESOURCE_URL, json=payload, headers=headers)
     if response.status_code != 200:
         return json_response(error='获取数据库实例下的资源信息失败，请联系管理员！')
 
-    # TODO 增加返回对象
-    return json_response(response.json().get('result'))
+    return json_response(build_resource_result(response.json().get('result')))
+
+
+def build_resource_result(resources):
+    result = list()
+    for item in resources:
+        if item.split('_')[-1] in settings.VIEW_ENV:
+            result.append(item)
+    return result
 
 
 # SQL检查
@@ -363,14 +379,14 @@ class SyncView(View):
 
         if error is not None:
             return json_response(error=error)
-        result = dict()
         workflow = WorkFlow.objects.filter(test_demand=form.id).first()
 
         executes = list(SqlExecute.objects.filter(workflow=workflow.id, env='test'))
         execute_env = {item.get('db_name').split(sep='_')[-1] for item in executes}
 
+        result = dict()
         result['execute_record'] = list(SqlExecute.objects.filter(workflow=workflow.id))
-        result['sync_env'] = list(execute_env)
+        result['sync_complete'] = list(execute_env)
 
         return json_response(data=result, error=error)
 
@@ -380,8 +396,8 @@ class SyncView(View):
             Argument('id', type=int, help='参数id不能为空'),
             Argument('demand_name', type=str, help='请输入需求名称'),
             Argument('demand_link', type=str, help='请输入需求链接'),
-            Argument('sync_finish', type=list, help='请输入已同步的环境'),
-            Argument('sync_envs', type=list, help='请指定同步环境！'),
+            Argument('sync_complete', type=list, help='请输入已同步的环境'),
+            Argument('sync_env', type=list, help='请指定同步环境！'),
         ).parse(request.body)
         if error is not None:
             return json_response(error=error)
@@ -395,7 +411,7 @@ class SyncView(View):
             if item.updated_at < workflow.updated_at:
                 return json_response(error='请先同步' + workflow.test_demand.demand_name)
 
-        difference_set = set(form.sync_envs).difference(set(form.sync_finish))
+        difference_set = set(form.sync_env).difference(set(form.sync_finish))
         if not difference_set:
             return json_response(error='没有需要同步的环境，请重新选择！')
 
@@ -421,7 +437,7 @@ class SyncView(View):
             url = 'http://10.188.15.53:9123/api/v1/workflow/'
             instance = instance_dict.get(item.db_type)
             time_stamp = int(time.time())
-            for env in form.sync_envs:
+            for env in form.sync_env:
                 db_name = item.get('db_name') + '_' + env
                 disposition = {
                     "workflow_name": time_stamp + db_name + form.demand_name,
@@ -549,5 +565,3 @@ def update_execute_sql(order_id, status, username, execute):
     execute.order_id = order_id
     execute.created_by = username
     execute.save()
-
-
