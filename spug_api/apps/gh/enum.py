@@ -43,10 +43,6 @@ class ExecuteStatus(Enum):
     PROD_FINISH = 6
     # 线上环境执行失败
     PROD_EXCEPTION = 7
-    # 同步环境执行中
-    PROD_EXCEPTION = 7
-    # 同步环境执行已执行
-    PROD_EXCEPTION = 7
 
 
 # sql执行状态枚举类

@@ -194,6 +194,8 @@ class WorkFlowView(View):
             form.extra = json.dumps(['branch', item.branch_name, version])
 
             req = DeployRequest.objects.create(created_by=request.user, **form)
+            item.deploy_request = req
+            item.save()
             is_required_notify = deploy.is_audit
             if is_required_notify:
                 Thread(target=Helper.send_deploy_notify, args=(req, 'approve_req')).start()

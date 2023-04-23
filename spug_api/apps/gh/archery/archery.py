@@ -8,9 +8,10 @@ import time
 import requests
 from django.core.cache import cache
 from django.db.models import Max
+from django.views import View
 
 from apps.gh.enum import Status, OrderStatus, ExecuteStatus, SqlExecuteStatus, SyncStatus
-from apps.gh.models import WorkFlow, SqlExecute, TestDemand
+from apps.gh.models import WorkFlow, SqlExecute, TestDemand, DatabaseConfig
 from libs import json_response, JsonParser, Argument, human_datetime
 
 
@@ -156,13 +157,14 @@ def execute_sql(request):
         'Authorization': f'Bearer {token}'
     }
 
-    sql_exec_status = ExecuteStatus.TEST_EXECUTING.value if Status.TESTING.value == form.status else ExecuteStatus.PROD_EXECUTING.value
+    sql_exec_status = ExecuteStatus.TEST_EXECUTING.value \
+        if Status.TESTING.value == form.status else ExecuteStatus.PROD_EXECUTING.value
     workflow_status = Status.ONLINE.value if Status.UNDER_ONLINE.value == form.status else Status.TESTING.value
 
-    try:
-        for item in form.databases:
+    for item in form.databases:
+        try:
             # 针对执行成功的过滤 不再执行
-            if not item.get('id'):
+            if item.get('id'):
                 execute = SqlExecute.objects.filter(pk=item.get('id'), status=SqlExecuteStatus.SUCCESS.value)
                 if execute:
                     continue
@@ -171,16 +173,14 @@ def execute_sql(request):
                     execute.delete()
 
             # 调用sql提交接口
+            archery_execute_status = SqlExecuteStatus.EXECUTING.value
             url, payload = build_workflow_submit(form, item, username)
             response = requests.post(url=url, json=payload, headers=headers)
             if response.status_code != 201 or OrderStatus.WORKFLOW_MAN_REVIEWING.value != response.json().get(
                     'workflow').get('status'):
-                # 更新当前的提测申请的sql执行状态
-                if form.status == Status.TESTING.value:
-                    sql_exec_status = ExecuteStatus.TEST_EXCEPTION.value
-                else:
-                    sql_exec_status = ExecuteStatus.PROD_EXCEPTION.value
-                return json_response(error='sql申请失败，请联系管理员！')
+                archery_execute_status = SqlExecuteStatus.FAILURE.value
+                error = 'sql申请失败，请联系管理员！'
+                continue
 
             order_id = response.json().get('workflow').get('id')
 
@@ -190,44 +190,33 @@ def execute_sql(request):
                 url, payload = build_workflow_audit(order_id)
                 response = requests.post(url=url, json=payload, headers=headers)
                 if response.status_code != 200 or 'passed' != response.json().get('msg'):
-                    # 更新当前的提测申请的sql执行状态
-                    if form.status == Status.TESTING.value:
-                        sql_exec_status = ExecuteStatus.TEST_EXCEPTION.value
-                    else:
-                        sql_exec_status = ExecuteStatus.PROD_EXCEPTION.value
-                    create_sql_execute(order_id, SqlExecuteStatus.FAILURE.value, form, item, request)
-                    return json_response(error='sql审核失败，请联系管理员！')
+                    archery_execute_status = SqlExecuteStatus.FAILURE.value
+                    error = 'sql审核失败，请联系管理员！'
+                    continue
 
                 # 调用sql执行接口
                 url, payload = build_workflow_execute(order_id)
                 response = requests.post(url=url, json=payload, headers=headers)
                 if response.status_code != 200:
                     # 更新当前的提测申请的sql执行状态
-                    if form.status == Status.TESTING.value:
-                        sql_exec_status = ExecuteStatus.TEST_EXCEPTION.value
-                    else:
-                        sql_exec_status = ExecuteStatus.PROD_EXCEPTION.value
-                    create_sql_execute(order_id, SqlExecuteStatus.FAILURE.value, form, item, request)
+                    archery_execute_status = SqlExecuteStatus.FAILURE.value
+                    error = 'sql执行失败，请联系管理员！'
+                    continue
+        except Exception as e:
+            logging.error(e)
+            archery_execute_status = SqlExecuteStatus.FAILURE.value
+            error = 'sql执行出现异常，请联系管理员！'
+        finally:
+            create_sql_execute(order_id, archery_execute_status, form, item, request)
 
-                    return json_response(error='sql执行失败，请联系管理员！')
-            create_sql_execute(order_id, SqlExecuteStatus.EXECUTING.value, form, item, request)
-        return json_response(data='success')
-    except Exception as e:
-        logging.error(e)
-        # 更新当前的提测申请的sql执行状态
-        if form.status == Status.TESTING.value:
-            sql_exec_status = ExecuteStatus.TEST_EXCEPTION.value
-        else:
-            sql_exec_status = ExecuteStatus.PROD_EXCEPTION.value
-        return json_response(error='sql执行失败，请联系管理员！')
-    finally:
-        # 更新当前的提测申请的sql执行状态
-        work_flow = WorkFlow.objects.filter(test_demand=form.id).first()
-        work_flow.status = workflow_status
-        work_flow.sql_exec_status = sql_exec_status
-        work_flow.updated_by = request.user
-        work_flow.updated_at = human_datetime()
-        work_flow.save()
+    # 更新当前的提测申请的sql执行状态
+    work_flow = WorkFlow.objects.filter(test_demand=form.id).first()
+    work_flow.status = workflow_status
+    work_flow.sql_exec_status = sql_exec_status
+    work_flow.updated_by = request.user
+    work_flow.updated_at = human_datetime()
+    work_flow.save()
+    return json_response(error=error)
 
 
 def create_sql_execute(order_id, status, form, item, request):
@@ -236,6 +225,7 @@ def create_sql_execute(order_id, status, form, item, request):
         env = 'test'
     else:
         env = 'prod'
+    order_id = order_id if order_id else 0
     workflow_id = WorkFlow.objects.filter(test_demand=form.id).first()
     SqlExecute.objects.create(test_demand=workflow_id,
                               order_id=order_id,
@@ -309,8 +299,7 @@ def get_workflow_result(request):
     headers = {
         'Authorization': f'Bearer {token}'
     }
-    url = 'http://10.188.15.53:9123/api/v1/workflow/?page=1&size=1000'
-    status_dict = dict()
+    url = 'http://10.188.15.53:9123/api/v1/workflow/?page=1&size=10'
     workflow_ids = set()
     for item in executing_sql:
         params = {'workflow_id': item.get('order_id')}
@@ -332,15 +321,11 @@ def get_workflow_result(request):
             continue
         item.save
 
-        if status_dict[item.get('test_demand_id')]:
-            status_dict.get(item.get('test_demand_id')).add(item.status)
-        else:
-            status_dict[item.get('test_demand_id')] = {item.status}
         workflow_ids.add(item.get('workflow_id'))
 
     # 更新workflow
     for workflow_id in workflow_ids:
-        aggregate = SqlExecute.objects.filter(workflow_id=workflow_id).aggregate(max=Max('status'))
+        aggregate = SqlExecute.objects.filter(workflow_id=workflow_id).aggregate(max=Max('status'), )
         max_status = aggregate.get('max')
         workflow = WorkFlow.objects.filter(pk=workflow_id).first()
         if workflow.get('is_sync') == SyncStatus.WAITING_SYNCHRONIZE.value:
@@ -365,5 +350,173 @@ def get_workflow_result(request):
                 workflow.is_sync = SyncStatus.SYNCHRONIZE_FINISH.value
             else:
                 workflow.is_sync = SyncStatus.SYNCHRONIZING.value
-
         workflow.save()
+
+
+class SyncView(View):
+
+    # 获取同步测试数据
+    def get(self, request):
+        form, error = JsonParser(
+            Argument('id', type=int, help='请求参数提测申请id不能为空')
+        ).parse(request.GET)
+
+        if error is not None:
+            return json_response(error=error)
+        result = dict()
+        workflow = WorkFlow.objects.filter(test_demand=form.id).first()
+
+        executes = list(SqlExecute.objects.filter(workflow=workflow.id, env='test'))
+        execute_env = {item.get('db_name').split(sep='_')[-1] for item in executes}
+
+        result['execute_record'] = list(SqlExecute.objects.filter(workflow=workflow.id))
+        result['execute_env'] = list(execute_env)
+
+        return json_response(data=result, error=error)
+
+    # 同步环境
+    def post(self, request):
+        form, error = JsonParser(
+            Argument('id', type=int, help='参数id不能为空'),
+            Argument('demand_name', type=str, help='请输入需求名称'),
+            Argument('demand_link', type=str, help='请输入需求链接'),
+            Argument('sync_finish', type=list, help='请输入已同步的环境'),
+            Argument('sync_envs', type=list, help='请指定同步环境！'),
+        ).parse(request.body)
+        if error is not None:
+            return json_response(error=error)
+
+        workflow = WorkFlow.objects.filter(test_demand=form.id).first()
+        # sql_executes = workflow.orders.all()
+
+        username = request.user.username
+        response_token = get_auth_token('chenqi')
+        token = response_token.get('token')
+        if token is None:
+            return json_response(error=response_token.get('error'))
+        # 请求头中带有Authorization
+        headers = {
+            'Authorization': f'Bearer {token}'
+        }
+        url = 'http://10.188.15.53:9123/api/v1/instance/'
+        params = {'instance_name__icontains': 'test'}
+        response = requests.get(url=url, params=params, headers=headers)
+        if response.status_code != 200:
+            return json_response(error='获取用户数据库实例失败，请联系管理员！')
+
+        instance_dict = {item.get('db_type'): item for item in response.json().get('results')}
+
+        database_configs = list(DatabaseConfig.objects.filter(test_demand=form.id))
+        for item in database_configs:
+            url = 'http://10.188.15.53:9123/api/v1/workflow/'
+            instance = instance_dict.get(item.db_type)
+            time_stamp = int(time.time())
+            for env in form.sync_envs:
+                db_name = item.get('db_name') + '_' + env
+                payload = {
+                    "workflow_name": time_stamp + db_name + form.demand_name,
+                    "demand_url": form.demand_link,
+                    "group_id": instance.get('resource_group')[0],
+                    "db_name": db_name,
+                    "instance": instance.get('id'),
+                    "is_backup": True,
+                    "engineer": username
+                }
+                response = requests.post(url=url, json=payload, headers=headers)
+                if response.status_code != 201 or OrderStatus.WORKFLOW_MAN_REVIEWING.value != response.json().get(
+                        'workflow').get('status'):
+                    # 更新当前的提测申请的sql执行状态
+                    create_sql_execute(0, SqlExecuteStatus.FAILURE.value, form, item, request)
+                    return json_response(error='sql申请失败，请联系管理员！')
+
+                order_id = response.json().get('workflow').get('id')
+                url = 'http://10.188.15.53:9123/api/v1/workflow/audit/'
+                payload = {
+                    'engineer': 'chenqi',
+                    "workflow_id": order_id,
+                    "audit_remark": "spug自动审核",
+                    "workflow_type": 2,
+                    "audit_type": "pass"
+                }
+                response = requests.post(url=url, json=payload, headers=headers)
+                if response.status_code != 200 or 'passed' != response.json().get('msg'):
+                    create_sql_execute(order_id, SqlExecuteStatus.FAILURE.value, form, item, request)
+                    return json_response(error='sql审核失败，请联系管理员！')
+
+                url = 'http://10.188.15.53:9123/api/v1/workflow/execute/'
+                payload = {
+                    "engineer": "chenqi",
+                    "workflow_id": order_id,
+                    "workflow_type": 2,
+                    "mode": "auto"
+                }
+                response = requests.post(url=url, json=payload, headers=headers)
+                if response.status_code != 200:
+                    create_sql_execute(order_id, SqlExecuteStatus.FAILURE.value, form, item, request)
+                    return json_response(error='sql执行失败，请联系管理员！')
+                create_sql_execute(order_id, SqlExecuteStatus.EXECUTING.value, form, item, request)
+
+        workflow = WorkFlow.objects.filter(test_demand=form.id).first()
+        workflow.status = SyncStatus.SYNCHRONIZING.value
+        workflow.save()
+
+        return json_response(data='success')
+
+    # 手动执行SQL
+    def patch(self, request):
+        form, error = JsonParser(
+            Argument('id', type=int, help='参数id不能为空'),
+            Argument('sql_content', type=str, help='参数sql内容不能为空'),
+        ).parse(request.body)
+        if error is not None:
+            return json_response(error=error)
+        SqlExecute.objects.filter(pk=form.id).first()
+        url = 'http://10.188.15.53:9123/api/v1/workflow/'
+        instance = instance_dict.get(item.db_type)
+        time_stamp = int(time.time())
+        for env in form.sync_envs:
+            db_name = item.get('db_name') + '_' + env
+            payload = {
+                "workflow_name": time_stamp + db_name + form.demand_name,
+                "demand_url": form.demand_link,
+                "group_id": instance.get('resource_group')[0],
+                "db_name": db_name,
+                "instance": instance.get('id'),
+                "is_backup": True,
+                "engineer": username
+            }
+            response = requests.post(url=url, json=payload, headers=headers)
+            if response.status_code != 201 or OrderStatus.WORKFLOW_MAN_REVIEWING.value != response.json().get(
+                    'workflow').get('status'):
+                # 更新当前的提测申请的sql执行状态
+                create_sql_execute(0, SqlExecuteStatus.FAILURE.value, form, item, request)
+                return json_response(error='sql申请失败，请联系管理员！')
+
+            order_id = response.json().get('workflow').get('id')
+            url = 'http://10.188.15.53:9123/api/v1/workflow/audit/'
+            payload = {
+                'engineer': 'chenqi',
+                "workflow_id": order_id,
+                "audit_remark": "spug自动审核",
+                "workflow_type": 2,
+                "audit_type": "pass"
+            }
+            response = requests.post(url=url, json=payload, headers=headers)
+            if response.status_code != 200 or 'passed' != response.json().get('msg'):
+                create_sql_execute(order_id, SqlExecuteStatus.FAILURE.value, form, item, request)
+                return json_response(error='sql审核失败，请联系管理员！')
+
+            url = 'http://10.188.15.53:9123/api/v1/workflow/execute/'
+            payload = {
+                "engineer": "chenqi",
+                "workflow_id": order_id,
+                "workflow_type": 2,
+                "mode": "auto"
+            }
+            response = requests.post(url=url, json=payload, headers=headers)
+            if response.status_code != 200:
+                create_sql_execute(order_id, SqlExecuteStatus.FAILURE.value, form, item, request)
+                return json_response(error='sql执行失败，请联系管理员！')
+            create_sql_execute(order_id, SqlExecuteStatus.EXECUTING.value, form, item, request)
+
+        pass
