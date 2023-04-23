@@ -76,6 +76,13 @@ class OrderStatus(Enum):
     # 执行有异常
     WORKFLOW_EXCEPTION = 'workflow_exception'
 
+# 邮件发送状态
+class SendStatus(Enum):
+    # 成功
+    SUCCESS = 1
+    # 失败
+    FAILURE = 2
+
 
 # 提测申请同步测试状态枚举类
 class SyncStatus(Enum):

@@ -6,6 +6,7 @@ from django.views import View
 from apps.app.models import Deploy
 from apps.deploy.models import DeployRequest
 from apps.gh.app.app import fetch_versions
+from apps.gh.email.email import send_email
 from apps.gh.enum import Status
 from apps.gh.helper import Helper
 from apps.gh.models import TestDemand, WorkFlow, DevelopProject, DatabaseConfig
@@ -40,12 +41,12 @@ class TestView(View):
                                                        demand_link=form.demand_link,
                                                        created_by=request.user)
 
-            WorkFlow.objects.create(test_demand=test_demand_id,
-                                    developer_name=form.developer_name,
-                                    tester_name=form.tester_name,
-                                    notify_name=form.notify_name,
-                                    updated_by=request.user
-                                    )
+            work_flow = WorkFlow.objects.create(test_demand=test_demand_id,
+                                                developer_name=form.developer_name,
+                                                tester_name=form.tester_name,
+                                                notify_name=form.notify_name,
+                                                updated_by=request.user
+                                                )
 
             batch_project_config = [DevelopProject(test_demand=test_demand_id,
                                                    deploy_id=item.get('deploy_id'),
@@ -71,6 +72,16 @@ class TestView(View):
                 DatabaseConfig.objects.bulk_create(batch_database_config)
 
         # TODO 提交测试申请 发生邮件
+        subject = f'{test_demand_id.demand_name}提测申请'
+        message = f'{test_demand_id.demand_name}提测申请，请前往指定测试人员'
+        recipient_list = work_flow.notify_name.split(",")
+        file_names = None
+        record_item = {
+            'status': work_flow.status,
+            'user': request.user,
+            'demand': test_demand_id
+        }
+        send_email(subject, message, recipient_list, file_names, record_item)
         return json_response(data='success')
 
     # 查询提测申请
@@ -120,12 +131,23 @@ class TestView(View):
         if error is not None:
             return json_response(error=error)
 
-        TestDemand.objects.filter(pk=form.id).update(test_case=form.test_case,
-                                                     test_report=form.test_report)
+        test_demand = TestDemand.objects.filter(pk=form.id).update(test_case=form.test_case,
+                                                                   test_report=form.test_report)
 
-        WorkFlow.objects.filter(test_demand=form.id).update(status=Status.COMPLETE_TEST.value,
-                                                            updated_by=request.user,
-                                                            updated_at=human_datetime())
+        work_flow = WorkFlow.objects.filter(test_demand=form.id).update(status=Status.COMPLETE_TEST.value,
+                                                                        updated_by=request.user,
+                                                                        updated_at=human_datetime())
+
+        subject = f'{test_demand.demand_name}测试完成'
+        message = f'{test_demand.demand_name}已经测试完成，请合代码部署到线上环境'
+        recipient_list = work_flow.notify_name.split(",")
+        file_names = [test_demand.test_case, test_demand.test_report]
+        record_item = {
+            'status': work_flow.status,
+            'user': request.user,
+            'demand': test_demand
+        }
+        send_email(subject, message, recipient_list, file_names, record_item)
         return json_response(data='success')
 
 
@@ -156,6 +178,26 @@ class WorkFlowView(View):
             work_flow.notify_name = form.notify_name
 
         work_flow.save()
+
+        # 指定测试人员发送邮件通知
+        if work_flow.status in [Status.DELEGATE_TEST.value, Status.COMPLETE_ONLINE.value]:
+            test_demand = TestDemand.objects.filter(pk=form.id).first()
+            if work_flow.status == Status.DELEGATE_TEST.value:
+                subject = f'{test_demand.demand_name}待测试'
+                message = f'{test_demand.demand_name}待测试'
+                file_names = None
+            else:
+                subject = f'{test_demand.demand_name}上线通知'
+                message = f'{test_demand.demand_name}已经部署到线上环境，请验证'
+                file_names = None
+
+            recipient_list = work_flow.notify_name.split(",")
+            record_item = {
+                'status': work_flow.status,
+                'user': request.user,
+                'demand': test_demand
+            }
+            send_email(subject, message, recipient_list, file_names, record_item)
 
         return json_response(data='success')
 
