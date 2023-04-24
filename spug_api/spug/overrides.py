@@ -91,5 +91,5 @@ GET_WORKFLOW_RESULT_URL = 'http://10.188.15.53:9123/api/v1/workflow/?page=1&size
 
 # 提测申请相关配置
 VIEW_ENV = ['test230', 'test231', 'test232', 'test233']
-SYNC_ENV = ['test230', 'test231', 'test232']
+SYNC_ENV = {'test230', 'test231', 'test232'}
 IGNORE_SYNC_ENV = ['test233']

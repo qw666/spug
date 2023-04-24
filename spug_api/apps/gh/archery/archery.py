@@ -331,7 +331,7 @@ def build_workflow_submit(random_code, form, item, username):
 
 
 # 获取sql执行结果
-def sync_workflow_sql_execute():
+def sync_archery_sql_execute_status():
     # 先筛选需要更新的数据  更新sql执行状态
     executing_sql = list(SqlExecute.objects.filter(status=SqlExecuteStatus.EXECUTING.value))
     if not executing_sql:

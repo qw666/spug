@@ -14,6 +14,8 @@ from apps.repository.models import Repository
 from libs import json_response, JsonParser, Argument, auth, human_datetime
 import json
 
+from spug import settings
+
 
 # Create your views here.
 
@@ -223,6 +225,9 @@ class WorkFlowView(View):
         projects = DevelopProject.objects.filter(test_demand=form.id)
 
         for item in list(projects):
+            # 已经同步好的申请不再发布
+            if item.deploy_request_id:
+                continue
             deploy = Deploy.objects.get(pk=item.deploy_id)
             if not deploy:
                 return json_response(error='未找到指定应用')
@@ -250,7 +255,7 @@ class WorkFlowView(View):
 
 
 # 定时任务 获取发布状态
-def sync_deploy_status():
+def sync_deploy_request_status():
     # 获取需要同步的状态
     need_sync_workflow = WorkFlow.objects.filter(status=Status.ONLINE.value,
                                                  sql_exec_status=ExecuteStatus.PROD_FINISH.value)
@@ -270,19 +275,18 @@ def sync_deploy_status():
 
 
 # 定时任务 通知发布的人
-def sync_deploy_status1():
+def notify_sync_test_env_databases():
     # 获取需要通知的提测申请
     need_sync_workflow = WorkFlow.objects.filter(status=Status.COMPLETE_ONLINE.value,
                                                  is_sync=False)
-    if need_sync_workflow:
-        for item in list(need_sync_workflow):
-            # item.orders.
-            executes = list(SqlExecute.objects.filter(workflow=item.get('workflow.id'), env='test'))
-            sync_env = {item.get('db_name').split(sep='_')[-1] for item in executes}
-            if {230, 231, 232, 233}.difference(sync_env):
-                print('没有同步完成')
-            else:
-                item.is_sync = True
-                item.save()
 
-    # TODO 是否发送邮件
+    if need_sync_workflow:
+        for workflow in list(need_sync_workflow):
+            executes = list(workflow.orders.filter(sync_env='test'))
+            sync_env = {item.db_name.split(sep='_')[-1] for item in executes}
+            if settings.SYNC_ENV.difference(sync_env):
+                # TODO 是否发送邮件
+                print('通知测试同步环境')
+            else:
+                workflow.is_sync = True
+                workflow.save()
