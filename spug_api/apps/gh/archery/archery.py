@@ -181,7 +181,6 @@ def execute_sql(request):
         Argument('demand_name', type=str, help='请输入需求名称'),
         Argument('demand_link', type=str, help='请输入需求链接'),
         Argument('status', type=int, help='当前工单的状态不能为空'),
-        Argument('sql_exec_status', type=int, help='当前工单的sql执行状态不能为空'),
         Argument('databases', type=list, help='请选择待执行的sql配置信息')
     ).parse(request.body)
 
@@ -200,9 +199,10 @@ def execute_sql(request):
 
     sql_exec_status = ExecuteStatus.TEST_EXECUTING.value \
         if Status.TESTING.value == form.status else ExecuteStatus.PROD_EXECUTING.value
-    workflow_status = Status.ONLINE.value if Status.UNDER_ONLINE.value == form.status else Status.TESTING.value
+    workflow_status = Status.TESTING.value if Status.TESTING.value == form.status else Status.ONLINE.value
 
     for item in form.databases:
+        order_id = 0
         random_code = generate_random_str(6)
         # 针对执行成功的过滤 不再执行
         exist_execute_sql = SqlExecute.objects.filter(sql_type=item.get('sql_type'),
@@ -271,7 +271,6 @@ def create_sql_execute(random_code, order_id, status, form, item, request):
         env = 'test'
     else:
         env = 'prod'
-    order_id = order_id if order_id else 0
     workflow_id = WorkFlow.objects.filter(test_demand=form.id).first()
     SqlExecute.objects.create(workflow=workflow_id,
                               order_id=order_id,
@@ -332,7 +331,7 @@ def build_workflow_submit(random_code, form, item, username):
 
 
 # 获取sql执行结果
-def get_workflow_result():
+def sync_workflow_sql_execute():
     # 先筛选需要更新的数据  更新sql执行状态
     executing_sql = list(SqlExecute.objects.filter(status=SqlExecuteStatus.EXECUTING.value))
     if not executing_sql:
@@ -364,39 +363,53 @@ def get_workflow_result():
                 or OrderStatus.WORKFLOW_EXCEPTION.value == status:
             item.status = SqlExecuteStatus.FAILURE.value
         else:
-            continue
+            item.status = SqlExecuteStatus.EXECUTING.value
         item.save(update_fields=['status'])
 
         workflow_ids.add(item.workflow_id)
 
     # 更新workflow
     for workflow_id in workflow_ids:
-        aggregate = SqlExecute.objects.filter(workflow_id=workflow_id).aggregate(max=Max('status'))
-        max_status = aggregate.get('max')
         workflow = WorkFlow.objects.filter(pk=workflow_id).first()
-        if workflow.sync_status == SyncStatus.WAITING_SYNCHRONIZE.value:
-            if workflow.status == Status.ONLINE.value:
-                if max_status == SqlExecuteStatus.FAILURE.value:
-                    workflow.sql_exec_status = ExecuteStatus.PROD_EXCEPTION.value
-                elif max_status == SqlExecuteStatus.SUCCESS.value:
-                    workflow.sql_exec_status = ExecuteStatus.PROD_FINISH.value
-                else:
-                    workflow.sql_exec_status = ExecuteStatus.PROD_EXECUTING.value
-            elif workflow.status == Status.TESTING.value:
-                if max_status == SqlExecuteStatus.FAILURE.value:
-                    workflow.sql_exec_status = ExecuteStatus.TEST_EXCEPTION.value
-                elif max_status == SqlExecuteStatus.SUCCESS.value:
-                    workflow.sql_exec_status = ExecuteStatus.TEST_FINISH.value
-                else:
-                    workflow.sql_exec_status = ExecuteStatus.TEST_EXECUTING.value
+        if Status.TESTING.value == workflow.status:
+            sync_env = settings.DATABASE_TEST_ENV
+        elif Status.ONLINE.value == workflow.status:
+            sync_env = settings.DATABASE_PROD_ENV
         else:
-            if max_status == SqlExecuteStatus.FAILURE.value:
+            sync_env = settings.DATABASE_TEST_ENV
+
+        status_set = set(SqlExecute.objects.values_list('status', flat=True)
+                         .filter(workflow_id=workflow_id, sync_env=sync_env))
+
+        if workflow.sync_status == SyncStatus.WAITING_SYNCHRONIZE.value:
+            workflow.sql_exec_status = get_sql_execute_status(workflow.status, status_set)
+        else:
+            if SqlExecuteStatus.FAILURE.value in status_set:
                 workflow.sync_status = SyncStatus.SYNCHRONIZE_EXCEPTION.value
-            elif max_status == SqlExecuteStatus.SUCCESS.value:
-                workflow.sync_status = SyncStatus.SYNCHRONIZE_FINISH.value
-            else:
+            elif SqlExecuteStatus.EXECUTING.value in status_set:
                 workflow.sync_status = SyncStatus.SYNCHRONIZING.value
+            else:
+                workflow.sync_status = SyncStatus.SYNCHRONIZE_FINISH.value
         workflow.save()
+
+
+def get_sql_execute_status(status, status_set):
+    if status == Status.ONLINE.value:
+        if SqlExecuteStatus.FAILURE.value in status_set:
+            sql_exec_status = ExecuteStatus.PROD_EXCEPTION.value
+        elif SqlExecuteStatus.EXECUTING.value in status_set:
+            sql_exec_status = ExecuteStatus.PROD_EXECUTING.value
+        else:
+            sql_exec_status = ExecuteStatus.PROD_FINISH.value
+    elif status == Status.TESTING.value:
+        if SqlExecuteStatus.FAILURE.value in status_set:
+            sql_exec_status = ExecuteStatus.TEST_EXCEPTION.value
+        elif SqlExecuteStatus.EXECUTING.value in status_set:
+            sql_exec_status = ExecuteStatus.TEST_EXECUTING.value
+        else:
+            sql_exec_status = ExecuteStatus.TEST_FINISH.value
+
+    return sql_exec_status
 
 
 class SyncView(View):

@@ -132,12 +132,16 @@ class TestView(View):
         if error is not None:
             return json_response(error=error)
 
-        test_demand = TestDemand.objects.filter(pk=form.id).update(test_case=form.test_case,
-                                                                   test_report=form.test_report)
+        test_demand = TestDemand.objects.filter(pk=form.id).first()
+        test_demand.test_case = form.test_case
+        test_demand.test_report = form.test_report
+        test_demand.save()
 
-        work_flow = WorkFlow.objects.filter(test_demand=form.id).update(status=Status.COMPLETE_TEST.value,
-                                                                        updated_by=request.user,
-                                                                        updated_at=human_datetime())
+        work_flow = WorkFlow.objects.filter(test_demand=form.id).first()
+        work_flow.status = Status.COMPLETE_TEST.value
+        work_flow.updated_by = request.user
+        work_flow.updated_at = human_datetime()
+        work_flow.save()
 
         subject = f'【spug通知】{test_demand.demand_name}测试完成通知'
         message = f'{test_demand.demand_name}已经测试完成，请合代码部署到线上环境'
@@ -178,6 +182,10 @@ class WorkFlowView(View):
             work_flow.notify_name = work_flow.developer_name + ',' + form.tester_name
         if form.notify_name:
             work_flow.notify_name = form.notify_name
+        if work_flow.status == Status.UNDER_ONLINE.value:
+            # 待上线更新sql执行状态
+            work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
+
         work_flow.save()
 
         # 指定测试人员发送邮件通知
@@ -206,9 +214,6 @@ class WorkFlowView(View):
     def get(self, request):
         form, error = JsonParser(
             Argument('id', type=int, help='参数id不能为空'),
-            Argument('type', default='1'),
-            Argument('plan', required=False),
-            Argument('desc', required=False),
         ).parse(request.GET)
         if error is not None:
             return json_response(error=error)
@@ -217,7 +222,7 @@ class WorkFlowView(View):
 
         projects = DevelopProject.objects.filter(test_demand=form.id)
 
-        for item in projects:
+        for item in list(projects):
             deploy = Deploy.objects.get(pk=item.deploy_id)
             if not deploy:
                 return json_response(error='未找到指定应用')
@@ -235,48 +240,49 @@ class WorkFlowView(View):
             form.version = f'{item.branch_name}#{version[:6]}'
 
             form.extra = json.dumps(['branch', item.branch_name, version])
-
+            del form.id
             req = DeployRequest.objects.create(created_by=request.user, **form)
             item.deploy_request_id = req.id
             item.save()
 
-            is_required_notify = deploy.is_audit
-            if is_required_notify:
-                Thread(target=Helper.send_deploy_notify, args=(req, 'approve_req')).start()
+            # TODO 运维申请发送邮件
         return json_response(error=error)
 
 
 # 定时任务 获取发布状态
 def sync_deploy_status():
     # 获取需要同步的状态
-    need_sync_workflow = WorkFlow.objects.filter(status=Status.ONLINE.ONLINE.value,
+    need_sync_workflow = WorkFlow.objects.filter(status=Status.ONLINE.value,
                                                  sql_exec_status=ExecuteStatus.PROD_FINISH.value)
-
+    if not need_sync_workflow:
+        return
     for item in list(need_sync_workflow):
-        deploy_request_ids = DevelopProject.objects.filter(test_demand=item.test_demand_id).values(
-            'deploy_request_id').values()
+        deploy_request_ids = list(DevelopProject.objects.filter(test_demand=item.test_demand_id)
+                                  .values_list("deploy_request_id", flat=True))
+
         deploy_status_list = DeployRequest.objects.values_list('status', flat=True).filter(
             pk__in=deploy_request_ids)
-        if set(deploy_status_list) == {3}:
-            item.is_sync = True
+        if deploy_status_list and set(deploy_status_list) == {'3'}:
+            item.status = Status.COMPLETE_ONLINE.value
             item.save()
 
     # TODO 是否发送邮件
 
 
 # 定时任务 通知发布的人
-def sync_deploy_status():
+def sync_deploy_status1():
     # 获取需要通知的提测申请
-    need_sync_workflow = WorkFlow.objects.filter(status=Status.ONLINE.COMPLETE_ONLINE.value,
+    need_sync_workflow = WorkFlow.objects.filter(status=Status.COMPLETE_ONLINE.value,
                                                  is_sync=False)
-    for item in list(need_sync_workflow):
-        # item.orders.
-        executes = list(SqlExecute.objects.filter(workflow=item.get('workflow.id'), env='test'))
-        sync_env = {item.get('db_name').split(sep='_')[-1] for item in executes}
-        if {230, 231, 232, 233}.difference(sync_env):
-            print('没有同步完成')
-        else:
-            item.is_sync = True
-            item.save()
+    if need_sync_workflow:
+        for item in list(need_sync_workflow):
+            # item.orders.
+            executes = list(SqlExecute.objects.filter(workflow=item.get('workflow.id'), env='test'))
+            sync_env = {item.get('db_name').split(sep='_')[-1] for item in executes}
+            if {230, 231, 232, 233}.difference(sync_env):
+                print('没有同步完成')
+            else:
+                item.is_sync = True
+                item.save()
 
     # TODO 是否发送邮件
