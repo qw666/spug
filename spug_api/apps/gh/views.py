@@ -7,7 +7,7 @@ from apps.app.models import Deploy
 from apps.deploy.models import DeployRequest
 from apps.gh.app.app import fetch_versions
 from apps.gh.email.email import send_email
-from apps.gh.enum import Status, ExecuteStatus, SyncStatus
+from apps.gh.enum import Status, ExecuteStatus
 from apps.gh.helper import Helper
 from apps.gh.models import TestDemand, WorkFlow, DevelopProject, DatabaseConfig, SqlExecute
 from apps.repository.models import Repository
@@ -175,9 +175,9 @@ class WorkFlowView(View):
         work_flow.updated_at = human_datetime()
         if form.tester_name:
             work_flow.tester_name = form.tester_name
+            work_flow.notify_name = work_flow.developer_name + ',' + form.tester_name
         if form.notify_name:
             work_flow.notify_name = form.notify_name
-
         work_flow.save()
 
         # 指定测试人员发送邮件通知

@@ -78,6 +78,7 @@ GET_AUTH_TOKEN_URL = 'http://10.188.15.53:9123/api/auth/token/'
 GET_INSTANCE_URL = 'http://10.188.15.53:9123/api/v1/instance/'
 GET_RESOURCE_URL = 'http://10.188.15.53:9123/api/v1/instance/resource/'
 CHECK_SQL_URL = 'http://10.188.15.53:9123/api/v1/workflow/sqlcheck/'
+GET_WORKFLOW_RESULT_URL = 'http://10.188.15.53:9123/api/v1/workflow/?page=1&size=10'
 
 # 提测申请相关配置
 VIEW_ENV = ['test230', 'test231', 'test232', 'test233']

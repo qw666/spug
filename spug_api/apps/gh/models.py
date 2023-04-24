@@ -155,7 +155,7 @@ class SqlExecute(models.Model, ModelMixin):
     # sql类型
     sql_type = models.SmallIntegerField(choices=SQL_TYPE)
     # 执行环境 test/prod
-    env = models.CharField(max_length=5)
+    sync_env = models.CharField(max_length=5)
     # 数据库所属组
     group_id = models.SmallIntegerField()
     # 数据库实例

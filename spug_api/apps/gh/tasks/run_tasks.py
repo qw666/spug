@@ -1,6 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_job
 
+from apps.gh.archery.archery import get_workflow_result
 
 # 1.实例化调度器
 scheduler = BackgroundScheduler()
@@ -12,10 +13,10 @@ try:
     # 3.设置定时任务，选择方式为interval，时间间隔为10s
     # 另一种方式为每天固定时间执行任务，对应代码为：
     # @register_job(scheduler, 'cron', hour='9', minute='30', second='10',id='task_time')
-    @register_job(scheduler, "interval", minutes=10, replace_existing=True)
-    def my_job():
-        # 这里写你要执行的任务
-        print('第一个定时任务')
+    @register_job(scheduler, "interval", minutes=1, replace_existing=True)
+    def get_workflow_result1():
+        # 定时任务获取sql执行结果
+        get_workflow_result()
 
     @register_job(scheduler, "interval", seconds=600, replace_existing=True)
     def my_job2():

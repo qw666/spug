@@ -12,7 +12,7 @@ from django.views import View
 
 from apps.gh.enum import Status, OrderStatus, ExecuteStatus, SqlExecuteStatus, SyncStatus
 from apps.gh.models import WorkFlow, SqlExecute, DatabaseConfig
-from libs import json_response, JsonParser, Argument, human_datetime
+from libs import json_response, JsonParser, Argument, human_datetime, generate_random_str
 from spug import settings
 
 
@@ -182,7 +182,7 @@ def execute_sql(request):
         Argument('demand_link', type=str, help='请输入需求链接'),
         Argument('status', type=int, help='当前工单的状态不能为空'),
         Argument('sql_exec_status', type=int, help='当前工单的sql执行状态不能为空'),
-        Argument('databases', type=list, help='请选择待执行的sql工程信息')
+        Argument('databases', type=list, help='请选择待执行的sql配置信息')
     ).parse(request.body)
 
     if error is not None:
@@ -203,19 +203,24 @@ def execute_sql(request):
     workflow_status = Status.ONLINE.value if Status.UNDER_ONLINE.value == form.status else Status.TESTING.value
 
     for item in form.databases:
-        try:
-            # 针对执行成功的过滤 不再执行
-            if item.get('id'):
-                execute = SqlExecute.objects.filter(pk=item.get('id'), status=SqlExecuteStatus.SUCCESS.value)
-                if execute:
-                    continue
-                else:
-                    # 删除执行中和执行失败的sql记录
-                    execute.delete()
+        random_code = generate_random_str(6)
+        # 针对执行成功的过滤 不再执行
+        exist_execute_sql = SqlExecute.objects.filter(sql_type=item.get('sql_type'),
+                                                      group_id=item.get('group_id'),
+                                                      instance=item.get('instance'),
+                                                      db_name=item.get('db_name'),
+                                                      db_type=item.get('db_type')).first()
+        if exist_execute_sql:
+            if exist_execute_sql.status == SqlExecuteStatus.SUCCESS.value:
+                continue
+            else:
+                # 删除执行中和执行失败的sql记录
+                exist_execute_sql.delete()
 
+        try:
             # 调用sql提交接口
             archery_execute_status = SqlExecuteStatus.EXECUTING.value
-            url, payload = build_workflow_submit(form, item, username)
+            url, payload = build_workflow_submit(random_code, form, item, username)
             response = requests.post(url=url, json=payload, headers=headers)
             if response.status_code != 201 or OrderStatus.WORKFLOW_MAN_REVIEWING.value != response.json().get(
                     'workflow').get('status'):
@@ -248,7 +253,7 @@ def execute_sql(request):
             archery_execute_status = SqlExecuteStatus.FAILURE.value
             error = 'sql执行出现异常，请联系管理员！'
         finally:
-            create_sql_execute(order_id, archery_execute_status, form, item, request)
+            create_sql_execute(random_code, order_id, archery_execute_status, form, item, request)
 
     # 更新当前的提测申请的sql执行状态
     work_flow = WorkFlow.objects.filter(test_demand=form.id).first()
@@ -260,7 +265,7 @@ def execute_sql(request):
     return json_response(error=error)
 
 
-def create_sql_execute(order_id, status, form, item, request):
+def create_sql_execute(random_code, order_id, status, form, item, request):
     # 更新当前的提测申请的sql执行状态
     if form.status == Status.TESTING.value:
         env = 'test'
@@ -268,10 +273,10 @@ def create_sql_execute(order_id, status, form, item, request):
         env = 'prod'
     order_id = order_id if order_id else 0
     workflow_id = WorkFlow.objects.filter(test_demand=form.id).first()
-    SqlExecute.objects.create(test_demand=workflow_id,
+    SqlExecute.objects.create(workflow=workflow_id,
                               order_id=order_id,
                               sync_env=env,
-                              demand_name=item.get('db_name') + '_' + form.demand_name,
+                              demand_name=random_code + item.get('db_name') + '_' + form.demand_name,
                               demand_link=form.demand_link,
                               sql_type=item.get('sql_type'),
                               group_id=item.get('group_id'),
@@ -310,11 +315,10 @@ def build_workflow_audit(archery_workflow_id):
     return url, payload
 
 
-def build_workflow_submit(form, item, username):
+def build_workflow_submit(random_code, form, item, username):
     url = 'http://10.188.15.53:9123/api/v1/workflow/'
-    time_stamp = int(time.time())
     disposition = {
-        "workflow_name": time_stamp + item['db_name'] + form.demand_name,
+        "workflow_name": random_code + item['db_name'] + form.demand_name,
         "demand_url": form.demand_link,
         "group_id": item['group_id'],
         "db_name": item['db_name'],
@@ -328,10 +332,11 @@ def build_workflow_submit(form, item, username):
 
 
 # 获取sql执行结果
-def get_workflow_result(request):
+def get_workflow_result():
     # 先筛选需要更新的数据  更新sql执行状态
     executing_sql = list(SqlExecute.objects.filter(status=SqlExecuteStatus.EXECUTING.value))
-
+    if not executing_sql:
+        return
     response_token = get_auth_token('chenqi')
     token = response_token.get('token')
     if token is None:
@@ -340,44 +345,44 @@ def get_workflow_result(request):
     headers = {
         'Authorization': f'Bearer {token}'
     }
-    url = 'http://10.188.15.53:9123/api/v1/workflow/?page=1&size=10'
     workflow_ids = set()
     for item in executing_sql:
-        params = {'workflow_id': item.get('order_id')}
-        response = requests.get(url=url, params=params, headers=headers)
+        params = {'workflow_id': item.order_id}
+        response = requests.get(url=settings.GET_WORKFLOW_RESULT_URL, params=params, headers=headers)
 
         if response.status_code != 200:
-            logging.warning('定时任务:sql工单:' + item.get('demand_name') + '的执行状态失败')
+            logging.warning('定时任务:sql工单:' + item.demand_name + '的执行状态失败')
             return
         elif response.json()['count'] == 0:
-            logging.warning('定时任务:sql工单:' + item.get('demand_name') + '无需同步')
+            logging.warning('定时任务:sql工单:' + item.demand_name + '无需同步')
             return
 
         status = response.json()['results'][0]['workflow']['status']
         if OrderStatus.WORKFLOW_FINISH.value == status:
             item.status = SqlExecuteStatus.SUCCESS.value
-        elif OrderStatus.WORKFLOW_ABORT.value == status or OrderStatus.WORKFLOW_AUTO_REVIEW_WRONG.value == status or OrderStatus.WORKFLOW_EXCEPTION.value == status:
+        elif OrderStatus.WORKFLOW_ABORT.value == status or OrderStatus.WORKFLOW_AUTO_REVIEW_WRONG.value == status \
+                or OrderStatus.WORKFLOW_EXCEPTION.value == status:
             item.status = SqlExecuteStatus.FAILURE.value
         else:
             continue
-        item.save
+        item.save(update_fields=['status'])
 
-        workflow_ids.add(item.get('workflow_id'))
+        workflow_ids.add(item.workflow_id)
 
     # 更新workflow
     for workflow_id in workflow_ids:
         aggregate = SqlExecute.objects.filter(workflow_id=workflow_id).aggregate(max=Max('status'))
         max_status = aggregate.get('max')
         workflow = WorkFlow.objects.filter(pk=workflow_id).first()
-        if workflow.get('is_sync') == SyncStatus.WAITING_SYNCHRONIZE.value:
-            if workflow.get('status') == Status.ONLINE.value:
+        if workflow.sync_status == SyncStatus.WAITING_SYNCHRONIZE.value:
+            if workflow.status == Status.ONLINE.value:
                 if max_status == SqlExecuteStatus.FAILURE.value:
                     workflow.sql_exec_status = ExecuteStatus.PROD_EXCEPTION.value
                 elif max_status == SqlExecuteStatus.SUCCESS.value:
                     workflow.sql_exec_status = ExecuteStatus.PROD_FINISH.value
                 else:
                     workflow.sql_exec_status = ExecuteStatus.PROD_EXECUTING.value
-            elif workflow.get('status') == Status.TESTING.value:
+            elif workflow.status == Status.TESTING.value:
                 if max_status == SqlExecuteStatus.FAILURE.value:
                     workflow.sql_exec_status = ExecuteStatus.TEST_EXCEPTION.value
                 elif max_status == SqlExecuteStatus.SUCCESS.value:
@@ -386,11 +391,11 @@ def get_workflow_result(request):
                     workflow.sql_exec_status = ExecuteStatus.TEST_EXECUTING.value
         else:
             if max_status == SqlExecuteStatus.FAILURE.value:
-                workflow.is_sync = SyncStatus.SYNCHRONIZE_EXCEPTION.value
+                workflow.sync_status = SyncStatus.SYNCHRONIZE_EXCEPTION.value
             elif max_status == SqlExecuteStatus.SUCCESS.value:
-                workflow.is_sync = SyncStatus.SYNCHRONIZE_FINISH.value
+                workflow.sync_status = SyncStatus.SYNCHRONIZE_FINISH.value
             else:
-                workflow.is_sync = SyncStatus.SYNCHRONIZING.value
+                workflow.sync_status = SyncStatus.SYNCHRONIZING.value
         workflow.save()
 
 
@@ -535,9 +540,9 @@ class SyncView(View):
         }
 
         url = 'http://10.188.15.53:9123/api/v1/workflow/'
-        time_stamp = int(time.time())
+        random_code = generate_random_str(6)
         disposition = {
-            "workflow_name": time_stamp + execute.get('db_name') + form.demand_name,
+            "workflow_name": random_code + execute.get('db_name') + form.demand_name,
             "demand_url": execute.get('demand_link'),
             "group_id": execute.get('group_id'),
             "db_name": execute.get('db_name'),
