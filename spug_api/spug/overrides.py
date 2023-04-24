@@ -61,13 +61,22 @@ MINIO_STORAGE_ACCESS_KEY = 'root'
 MINIO_STORAGE_SECRET_KEY = 'aUxE_MeRmjrzC4'
 MINIO_STORAGE_BUCKET_NAME = 'spug-file-bucket'
 
-# 发送邮件相关配置
+# 126邮箱相关配置
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.126.com'
+# EMAIL_PORT = 25
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'gohightest@126.com'
+# EMAIL_HOST_PASSWORD = 'RGWDYWZKNPGLEVXV'
+# 腾讯企业邮箱相关配置
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.126.com'
-EMAIL_PORT = 25
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'gohightest@126.com'
-EMAIL_HOST_PASSWORD = 'RGWDYWZKNPGLEVXV'
+EMAIL_HOST = 'smtp.exmail.qq.com'
+EMAIL_PORT = 465
+EMAIL_USE_TLS = False # 是否使用TLS安全传输协议
+EMAIL_USE_SSL = True # 是否使用SSL加密，qq企业邮箱要求使用
+EMAIL_HOST_USER = 'chenqi@gohigh.com.cn'
+EMAIL_HOST_PASSWORD = 'Qichen8906'
+DEFAULT_FROM_EMAIL = 'chenqi@gohigh.com.cn'
 
 # Archery sql 审核平台相关配置
 DATABASE_TEST_ENV = 'test'

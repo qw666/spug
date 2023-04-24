@@ -89,7 +89,7 @@ def send_email_message(subject, message, recipient_list):
 # 应用发布webhook调用
 def send_deploy_email(request):
     deploy_request = json.loads(request.body)
-
+    print(deploy_request)
     version = deploy_request['version'].split('#')[0]
     spug_app_name = deploy_request['app_name']
     spug_env_name = deploy_request['env_name']
@@ -101,35 +101,7 @@ def send_deploy_email(request):
     deploy_status = deploy_request['status']
     action = deploy_request['action']
     reason = deploy_request['reason']
-    # 审核邮件通知
-    # if deploy_status == '0':
-    #     subject = f"【spug通知】 {spug_app_name}--{version} 发布审核申请!"
-    #     message = f"""【申请详情】
-    #     申请发布应用: {spug_app_name}
-    #     申请发布分支: {version}
-    #     申请发布环境: {spug_env_name}
-    #     申请描述: {spug_req_name}
-    #     申请发布的主机: {spug_target_name_list}
-    #     申请人: {spug_created_by}""".replace(' ', '') + f'\n申请时间: {human_datetime()}'
-    #     recipient_list = ['王奇']
-    #     send_email_message(subject, message, recipient_list)
-    #
-    # # 审核通过邮件通知
-    # elif deploy_status == '3':
-    #     subject = f"【spug通知】 {spug_app_name}--{version} 发布审核通过!"
-    #     message = f"""【发布详情】
-    #     发布应用: {spug_app_name}
-    #     发布分支: {version}
-    #     发布环境: {spug_env_name}
-    #     发布描述: {spug_req_name}
-    #     发布的主机: {spug_target_name_list}
-    #     发布人: {spug_created_by}""".replace(' ', '') + f'\n发布时间: {human_datetime()}'
-    #     recipient_list = [spug_created_by]
-    #     send_email_message(subject, message, recipient_list)
-    # else:
-    #     pass
 
-    # -------------------spug原始通知格式---------------------
     texts = [
         f'申请标题： {spug_req_name}',
         f'应用名称： {spug_app_name}',
@@ -140,7 +112,8 @@ def send_deploy_email(request):
 
     if action == 'approve_req':
         notifiers = list(User.objects.values_list('nickname', flat=True).filter(roles__name__contains='管理').distinct())
-        title = '发布审核申请'
+        # notifiers = ['高银肖']
+        title = '【spug通知】发布审核申请通知'
         texts.insert(0, '## %s' % '发布审核申请')
         texts.extend([
             f'申请人员： {spug_created_by}',
@@ -149,7 +122,7 @@ def send_deploy_email(request):
         ])
     elif action == 'approve_rst':
         notifiers = list(set([spug_created_by]))
-        title = '发布审核结果'
+        title = '【spug通知】审核结果通知'
         text = '通过' if deploy_status == '1' else '驳回'
         texts.insert(0, '## %s' % '发布审核结果')
         texts.extend([
@@ -161,7 +134,7 @@ def send_deploy_email(request):
         ])
     else:
         notifiers = list(set([spug_created_by, spug_do_by]))
-        title = '发布结果通知'
+        title = '【spug通知】发布结果通知'
         text = '成功' if deploy_status == '3' else '失败'
         texts.insert(0, '## %s' % '发布结果通知')
         if spug_approve_by:
