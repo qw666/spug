@@ -214,7 +214,10 @@ class Helper:
                     'version': version,
                     'targets': hosts,
                     'is_success': req.status == '3',
-                    'created_at': human_datetime()
+                    'created_at': human_datetime(),
+                    'created_by': req.created_by.nickname if req.created_by else None,
+                    'approve_by': req.approve_by.nickname if req.approve_by else None,
+                    'do_by': req.do_by.nickname if req.do_by else None,
                 }
                 Notification.handle_request(url, data)
             elif rst_notify['mode'] == '3':
