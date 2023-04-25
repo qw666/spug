@@ -4,15 +4,15 @@ DATABASES = {
     'default': {
         'ATOMIC_REQUESTS': True,
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'spug',             # 替换为自己的数据库名，请预先创建好编码为utf8mb4的数据库
-        'USER': 'spug_user',        # 数据库用户名
+        'NAME': 'spug',  # 替换为自己的数据库名，请预先创建好编码为utf8mb4的数据库
+        'USER': 'spug_user',  # 数据库用户名
         'PASSWORD': '95vQkU88E_tfdS',  # 数据库密码
-        'HOST': '10.188.15.56',        # 数据库地址
-        'PORT': '3402',        # 数据库地址
+        'HOST': '10.188.15.56',  # 数据库地址
+        'PORT': '3402',  # 数据库地址
         'OPTIONS': {
             'charset': 'utf8mb4',
             'sql_mode': 'STRICT_TRANS_TABLES',
-            #'unix_socket': '/opt/mysql/mysql.sock' # 如果是本机数据库,且不是默认安装的Mysql,需要指定Mysql的socket文件路径
+            # 'unix_socket': '/opt/mysql/mysql.sock' # 如果是本机数据库,且不是默认安装的Mysql,需要指定Mysql的socket文件路径
         }
     }
 }
@@ -55,8 +55,8 @@ MINIO_STORAGE_BUCKET_NAME = 'spug-file-bucket'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.exmail.qq.com'
 EMAIL_PORT = 465
-EMAIL_USE_TLS = False # 是否使用TLS安全传输协议
-EMAIL_USE_SSL = True # 是否使用SSL加密，qq企业邮箱要求使用
+EMAIL_USE_TLS = False  # 是否使用TLS安全传输协议
+EMAIL_USE_SSL = True  # 是否使用SSL加密，qq企业邮箱要求使用
 EMAIL_HOST_USER = 'chenqi@gohigh.com.cn'
 EMAIL_HOST_PASSWORD = 'Qichen8906'
 DEFAULT_FROM_EMAIL = 'chenqi@gohigh.com.cn'
@@ -70,6 +70,9 @@ GET_AUTH_TOKEN_URL = 'http://10.188.15.53:9123/api/auth/token/'
 GET_INSTANCE_URL = 'http://10.188.15.53:9123/api/v1/instance/'
 GET_RESOURCE_URL = 'http://10.188.15.53:9123/api/v1/instance/resource/'
 CHECK_SQL_URL = 'http://10.188.15.53:9123/api/v1/workflow/sqlcheck/'
+WORKFLOW_SUBMIT_URL = 'http://10.188.15.53:9123/api/v1/workflow/'
+WORKFLOW_AUDIT_URL = 'http://10.188.15.53:9123/api/v1/workflow/audit/'
+WORKFLOW_EXECUTE_URL = 'http://10.188.15.53:9123/api/v1/workflow/execute/'
 GET_WORKFLOW_RESULT_URL = 'http://10.188.15.53:9123/api/v1/workflow/?page=1&size=10'
 
 # 提测申请相关配置

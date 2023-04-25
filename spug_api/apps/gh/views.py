@@ -271,8 +271,6 @@ def sync_deploy_request_status():
             item.status = Status.COMPLETE_ONLINE.value
             item.save()
 
-    # TODO 是否发送邮件
-
 
 # 定时任务 通知发布的人
 def notify_sync_test_env_databases():
