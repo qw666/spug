@@ -91,7 +91,7 @@ def get_resource(request):
     if error is not None:
         return json_response(error=error)
     status = form.status
-    if not status:
+    if not status or status == 5:
         status = 4
 
     username = request.user.username
@@ -563,44 +563,43 @@ class SyncView(View):
         }
         order_id = 1
         random_code = generate_random_str(6)
+        archery_execute_status = SqlExecuteStatus.EXECUTING.value
         payload = build_sync_update_sql_execute(execute, form, random_code, username)
 
-        response = requests.post(url=settings.WORKFLOW_SUBMIT_URL, json=payload, headers=headers)
-        if response.status_code != 201 or OrderStatus.WORKFLOW_MAN_REVIEWING.value != response.json().get(
-                'workflow').get('status'):
-            # 更新当前的提测申请的sql执行状态
-            update_execute_sql(order_id, SqlExecuteStatus.FAILURE.value, username)
-            return json_response(error='sql申请失败，请联系管理员！')
+        try:
 
-        order_id = response.json().get('workflow').get('id')
-        url = 'http://10.188.15.53:9123/api/v1/workflow/audit/'
-        payload = {
-            'engineer': 'chenqi',
-            "workflow_id": order_id,
-            "audit_remark": "spug同步sql 修改！",
-            "workflow_type": 2,
-            "audit_type": "pass"
-        }
-        response = requests.post(url=url, json=payload, headers=headers)
-        if response.status_code != 200 or 'passed' != response.json().get('msg'):
-            update_execute_sql(order_id, SqlExecuteStatus.FAILURE.value, username)
-            return json_response(error='sql审核失败，请联系管理员！')
+            response = requests.post(url=settings.WORKFLOW_SUBMIT_URL, json=payload, headers=headers)
+            if response.status_code != 201 or OrderStatus.WORKFLOW_MAN_REVIEWING.value != response.json().get(
+                    'workflow').get('status'):
+                # 更新当前的提测申请的sql执行状态
+                archery_execute_status = SqlExecuteStatus.FAILURE.value
+                error = 'sql申请失败，请联系管理员！'
+                return
 
-        url = 'http://10.188.15.53:9123/api/v1/workflow/execute/'
-        payload = {
-            "engineer": "chenqi",
-            "workflow_id": order_id,
-            "workflow_type": 2,
-            "mode": "auto"
-        }
-        response = requests.post(url=url, json=payload, headers=headers)
-        if response.status_code != 200:
-            update_execute_sql(order_id, SqlExecuteStatus.FAILURE.value, username)
-            return json_response(error='sql执行失败，请联系管理员！')
+            order_id = response.json().get('workflow').get('id')
 
-        update_execute_sql(order_id, SqlExecuteStatus.SUCCESS.value, username)
+            # 调用sql审核接口
+            payload = build_workflow_audit(order_id)
+            response = requests.post(url=settings.WORKFLOW_AUDIT_URL, json=payload, headers=headers)
+            if response.status_code != 200 or 'passed' != response.json().get('msg'):
+                archery_execute_status = SqlExecuteStatus.FAILURE.value
+                error = 'sql审核失败，请联系管理员！'
+                return
 
-        pass
+            # 调用sql执行接口
+            payload = build_workflow_execute(order_id)
+            response = requests.post(url=settings.WORKFLOW_EXECUTE_URL, json=payload, headers=headers)
+            if response.status_code != 200:
+                # 更新当前的提测申请的sql执行状态
+                archery_execute_status = SqlExecuteStatus.FAILURE.value
+                error = 'sql执行失败，请联系管理员！'
+        except Exception as e:
+            logging.error(e)
+            archery_execute_status = SqlExecuteStatus.FAILURE.value
+            error = 'sql执行出现异常，请联系管理员！'
+        finally:
+            update_execute_sql(order_id, archery_execute_status, request, execute)
+            return json_response(error=error)
 
 
 def build_sync_update_sql_execute(execute, form, random_code, username):
@@ -617,10 +616,10 @@ def build_sync_update_sql_execute(execute, form, random_code, username):
     return payload
 
 
-def update_execute_sql(order_id, status, username, execute):
+def update_execute_sql(order_id, status, request, execute):
     execute.status = status
     execute.order_id = order_id
-    execute.created_by = username
+    execute.created_by = request.user
     execute.save()
 
 
