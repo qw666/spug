@@ -292,7 +292,7 @@ def create_sql_execute(random_code, order_id, status, form, item, request):
                               )
 
 
-def create_sync_sql_execute(random_code, env, order_id, status, workflow, form, item, request):
+def create_sync_sql_execute(random_code, env, order_id, instance, status, workflow, form, item, request):
     db_name = item.db_name + '_' + env
     SqlExecute.objects.create(workflow=workflow,
                               order_id=order_id,
@@ -300,8 +300,8 @@ def create_sync_sql_execute(random_code, env, order_id, status, workflow, form, 
                               demand_name=random_code + item.db_name + '_' + env + '_' + form.demand_name,
                               demand_link=form.demand_link,
                               sql_type=item.sql_type,
-                              group_id=item.group_id,
-                              instance=item.instance,
+                              group_id=instance.get('resource_group')[0],
+                              instance=instance.get('id'),
                               db_type=item.db_type,
                               db_name=db_name,
                               status=status,
@@ -533,7 +533,7 @@ class SyncView(View):
                     archery_execute_status = SqlExecuteStatus.FAILURE.value
                     error = 'sql执行出现异常，请联系管理员！'
                 finally:
-                    create_sync_sql_execute(random_code, env, order_id,
+                    create_sync_sql_execute(random_code, env, order_id, instance,
                                             archery_execute_status, workflow, form, item, request)
 
         workflow.status = SyncStatus.SYNCHRONIZING.value
@@ -549,8 +549,12 @@ class SyncView(View):
         if error is not None:
             return json_response(error=error)
         execute = SqlExecute.objects.filter(pk=form.id).first()
-        if not execute or execute.status != SqlExecuteStatus.FAILURE.value:
-            return json_response(error={"当前SQL正在同步中，请稍后重试！"})
+        if execute:
+            if execute.status != SqlExecuteStatus.FAILURE.value:
+                return json_response(error="当前SQL正在同步中，请稍后重试！")
+        else:
+            return json_response(error="未找到当前执行的SQL，请联系管理员！")
+
         username = request.user.username
 
         response_token = get_auth_token('chenqi')
@@ -563,8 +567,9 @@ class SyncView(View):
         }
         order_id = 1
         random_code = generate_random_str(6)
+        demand_name = random_code + execute.demand_name[6:]
         archery_execute_status = SqlExecuteStatus.EXECUTING.value
-        payload = build_sync_update_sql_execute(execute, form, random_code, username)
+        payload = build_sync_update_sql_execute(execute, form, demand_name, username)
 
         try:
 
@@ -598,13 +603,13 @@ class SyncView(View):
             archery_execute_status = SqlExecuteStatus.FAILURE.value
             error = 'sql执行出现异常，请联系管理员！'
         finally:
-            update_execute_sql(order_id, archery_execute_status, request, execute)
+            update_execute_sql(order_id, demand_name, archery_execute_status, request, execute)
             return json_response(error=error)
 
 
-def build_sync_update_sql_execute(execute, form, random_code, username):
+def build_sync_update_sql_execute(execute, form, demand_name, username):
     disposition = {
-        "workflow_name": random_code + execute.db_name + form.demand_name,
+        "workflow_name": demand_name,
         "demand_url": execute.demand_link,
         "group_id": execute.group_id,
         "db_name": execute.db_name,
@@ -616,8 +621,9 @@ def build_sync_update_sql_execute(execute, form, random_code, username):
     return payload
 
 
-def update_execute_sql(order_id, status, request, execute):
+def update_execute_sql(order_id, demand_name, status, request, execute):
     execute.status = status
+    execute.demand_name = demand_name
     execute.order_id = order_id
     execute.created_by = request.user
     execute.save()
