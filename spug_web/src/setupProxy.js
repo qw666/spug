@@ -6,8 +6,9 @@
 const proxy = require('http-proxy-middleware');
 
 module.exports = function (app) {
+ /* 10.188.15.192:8780*/
   app.use(proxy('/api/', {
-    target: 'http://127.0.0.1:8000',
+    target: 'http://10.188.15.56:8780/api',
     changeOrigin: true,
     ws: true,
     headers: {'X-Real-IP': '1.1.1.1'},

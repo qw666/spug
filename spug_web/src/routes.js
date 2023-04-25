@@ -41,8 +41,9 @@ import SystemSetting from './pages/system/setting';
 import SystemLogin from './pages/system/login';
 import WelcomeIndex from './pages/welcome/index';
 import WelcomeInfo from './pages/welcome/info';
-
+import deployTesting from './pages/deploy/testing';
 export default [
+  //auth  role接口 page_perms字段  exec:task:[do]
   {icon: <DesktopOutlined/>, title: '工作台', path: '/home', component: HomeIndex},
   {
     icon: <DashboardOutlined/>,
@@ -64,6 +65,7 @@ export default [
       {title: '发布配置', auth: 'deploy.app.view', path: '/deploy/app', component: DeployApp},
       {title: '构建仓库', auth: 'deploy.repository.view', path: '/deploy/repository', component: DeployRepository},
       {title: '发布申请', auth: 'deploy.request.view', path: '/deploy/request', component: DeployRequest},
+      { title: '提测申请', auth: 'deploy.testing.view',path: '/deploy/testing ', component: deployTesting},
     ]
   },
   {
