@@ -146,8 +146,8 @@ def check_sql(request):
     warning_group = list()
     error_group = list()
     for item in form.databases:
-        payload = {'instance_id': item.get('instance_id'), 'db_name': item.get('db_name'),
-                   'full_sql': item.get('full_sql')}
+        payload = {'instance_id': item.get('instance'), 'db_name': item.get('db_name'),
+                   'full_sql': item.get('sql_content')}
         response = requests.post(url=settings.CHECK_SQL_URL, json=payload, headers=headers)
         if response.status_code != 200:
             return json_response(error='sql检查失败，请联系管理员！')
