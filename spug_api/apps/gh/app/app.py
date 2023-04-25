@@ -15,7 +15,7 @@ def list_apps(request):
     ).parse(request.GET)
     if error is None:
         apps = []
-        deploy = Deploy.objects.filter(env_id='3')
+        deploy = Deploy.objects.filter(env__name__contains='94')
         for d in deploy:
             tmp = d.app.to_dict(selects=('id', 'name', 'key', 'desc'))
             tmp['deploy_id'] = d.id
