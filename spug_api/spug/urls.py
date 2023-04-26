@@ -17,6 +17,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import path, include
+from apps.gh.tasks import run_tasks
 
 urlpatterns = [
     path('account/', include('apps.account.urls')),
@@ -34,4 +35,10 @@ urlpatterns = [
     path('notify/', include('apps.notify.urls')),
     path('file/', include('apps.file.urls')),
     path('apis/', include('apps.apis.urls')),
+    path('gh/', include('apps.gh.urls')),
+    path('gh/minio/', include('apps.gh.minio.urls')),
+    path('gh/user/', include('apps.gh.user.urls')),
+    path('gh/archery/', include('apps.gh.archery.urls')),
+    path('gh/app/', include('apps.gh.app.urls')),
+    path('gh/email/', include('apps.gh.email.urls')),
 ]

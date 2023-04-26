@@ -6,11 +6,13 @@ from django.db.models import F
 from django.conf import settings
 from django.http.response import HttpResponseBadRequest
 from django_redis import get_redis_connection
+
+from apps.gh.helper import Helper
 from libs import json_response, JsonParser, Argument, human_datetime, human_time, auth
 from apps.deploy.models import DeployRequest
 from apps.app.models import Deploy, DeployExtend2
 from apps.repository.models import Repository
-from apps.deploy.utils import dispatch, Helper
+from apps.deploy.utils import dispatch
 from apps.host.models import Host
 from collections import defaultdict
 from threading import Thread

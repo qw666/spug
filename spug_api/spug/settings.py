@@ -46,8 +46,10 @@ INSTALLED_APPS = [
     'apps.deploy',
     'apps.notify',
     'apps.repository',
+    'apps.gh',
     'apps.home',
     'channels',
+    'django_apscheduler',
 ]
 
 MIDDLEWARE = [
@@ -130,6 +132,7 @@ USE_TZ = False
 AUTHENTICATION_EXCLUDES = (
     '/account/login/',
     '/setting/basic/',
+    '/gh/email/send_deploy_email/',
     re.compile('/apis/.*'),
 )
 

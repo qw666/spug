@@ -4,13 +4,15 @@
 from django_redis import get_redis_connection
 from django.conf import settings
 from django.db import close_old_connections
+
+from apps.gh.helper import Helper
 from libs.utils import AttrDict, human_time, render_str
 from apps.host.models import Host
 from apps.config.utils import compose_configs
 from apps.repository.models import Repository
 from apps.repository.utils import dispatch as build_repository
 from apps.deploy.models import DeployRequest
-from apps.deploy.helper import Helper, SpugError
+from apps.deploy.helper import SpugError
 from concurrent import futures
 from functools import partial
 import json
