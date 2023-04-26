@@ -14,12 +14,17 @@ function SynchronousEnv(props) {
     const HandleSubmit = () => {
         const formData = form.getFieldsValue();
         console.log(formData);
-        http.post('/api/gh/archery/sync/',{
+        if(formData.sync_complete){
+            formData.sync_complete.toString()
+        }else{
+            return message.error("请指定同步测试环境")
+        }
+        http.post('/api/gh/archery/sync',{
            id:store.synchronousEnvForm.id,
             demand_name:formData.demand_name,
             demand_link:formData.demand_link,
             sync_env:formData.sync_env.toString(),
-            sync_complete:formData.sync_complete.toString(),
+            sync_complete:formData.sync_complete
         }).then(res => {
 
         })
@@ -29,7 +34,7 @@ function SynchronousEnv(props) {
         const reloadSqlformData = reloadSqlform.getFieldsValue();
         console.log(store.synchronousEnvForm.id);
         console.log(reloadSqlformData);
-        http.patch('/api/gh/archery/sync/', {
+        http.patch('/api/gh/archery/sync', {
             id: store.synchronousEnvForm.id,
             sql_content: reloadSqlformData.sql_content
         }).then(() => {
