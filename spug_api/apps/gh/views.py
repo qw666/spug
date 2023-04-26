@@ -228,6 +228,7 @@ class WorkFlowView(View):
         test_demand = TestDemand.objects.filter(pk=form.id).first()
 
         projects = DevelopProject.objects.filter(test_demand=form.id)
+        del form.id
 
         for item in list(projects):
             # 已经同步好的申请不再发布
@@ -250,7 +251,7 @@ class WorkFlowView(View):
             form.version = f'{item.branch_name}#{version[:6]}'
 
             form.extra = json.dumps(['branch', item.branch_name, version])
-            del form.id
+
             req = DeployRequest.objects.create(created_by=request.user, **form)
             item.deploy_request_id = req.id
             item.save()
