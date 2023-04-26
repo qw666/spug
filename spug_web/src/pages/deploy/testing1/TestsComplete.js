@@ -7,7 +7,6 @@ import {Form, Input, Modal, Select, Space, Upload,message,Button} from "antd";
 import {UploadOutlined} from "@ant-design/icons";
 import { X_TOKEN } from 'libs';
 export default observer(function () {
-    const [files, setFiles] = useState([]);
     const [par, setPar] = useState({
         test_case :"",
         test_report:"",
@@ -31,13 +30,10 @@ export default observer(function () {
         console.log(info.file.status);
     }
     function handleUpload1(file, fileList) {
-        console.log("uploadType",uploadType);
-        console.log(file);
-        file.status= 'done'
         let isTrue = "";
         let FileExt = file.name.replace(/.+\./, "");
         //验证图片格式
-        if (["xls", "xlsx"].indexOf(FileExt.toLowerCase()) === -1) {
+        if (["xls", "xlsx","docx"].indexOf(FileExt.toLowerCase()) === -1) {
             isTrue = false;
         } else {
             isTrue = true;
@@ -47,7 +43,6 @@ export default observer(function () {
             message.error("只能上传xls、xlsx格式的文件");
             return
         }
-
 
         const formData = new FormData();
         formData.append('file', file);

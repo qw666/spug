@@ -206,24 +206,6 @@ class Store {
             }
         })
     };
-    //上线完成
-    onlineCompletion = (e,info) =>{
-        Modal.confirm({
-            title: '上线完成确认',
-            content: `确定要上线完成【${info['demand_name']}】?`,
-            onOk: () => {
-                return http.patch('/api/gh/workflow/', {
-                    id: info.id,
-                    status:info.status
-                })
-                    .then(() => {
-                        message.success('操作成功');
-                        //表格数据请求
-                        this.fetchRecords()
-                    })
-            }
-        })
-    };
      handleDelete = (info) => {
         Modal.confirm({
             title: '删除确认',

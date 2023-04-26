@@ -9,7 +9,8 @@ export default observer(function () {
     //表单提交
     function appointHandleSubmit() {
         const formData = form.getFieldsValue();
-        console.log(formData);
+
+        //测试
         if(store.appointType === "test"){
             if(formData.tester_name == 0){
                 message.error('请指定测试人员');
@@ -26,7 +27,25 @@ export default observer(function () {
                 store.appointVisible = false;
             })
         }
+        //上线
         if(store.appointType === "goOnline"){
+            if(formData.notify_name  === undefined){
+                message.error('请指定通知人员');
+                return false
+            }
+            http.patch('/api/gh/workflow/', {
+                    id: store.appointForm.id,
+                    status: store.appointForm.status,
+                    notify_name:formData.notify_name.toString()
+                }
+            ).then(res => {
+                message.success('操作成功');
+                store.fetchRecords();
+                store.appointVisible = false;
+            })
+        }
+        //上线完成
+        if(store.appointType === "beOnline"){
             if(formData.notify_name  === undefined){
                 message.error('请指定通知人员');
                 return false
@@ -70,7 +89,7 @@ export default observer(function () {
                     </Form.Item>
                 }
                 {
-                    store.appointType === "goOnline" && <Form.Item required name="notify_name" label="通知人员" >
+                    ( store.appointType === "goOnline" ||store.appointType === "beOnline" ) && <Form.Item required name="notify_name" label="通知人员" >
                         <Select
                             mode="multiple"
                             allowClear
