@@ -68,7 +68,7 @@ export default observer(function () {
         let deploy_id = targetOption.deploy_id;
         console.log("targetOption",targetOption);
         targetOption.loading = true;
-        http.get('/api/gh/app/deploy/133/versions/?deploy_id= ' + deploy_id ).then(res => {
+        http.get('/api/gh/app/deploy/'+ deploy_id +'/versions/' ).then(res => {
             console.log(res);
             // load options lazily
             setTimeout(() => {
@@ -232,6 +232,9 @@ export default observer(function () {
     function handleReset() {
         form.resetFields();
     }
+    const filter = (inputValue, path) =>
+        path.some((option) => option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
+
     return (
         <Modal
             visible
@@ -329,6 +332,7 @@ export default observer(function () {
                                             required
                                         >
                                             <Cascader
+                                                showSearch={{ filter }}
                                                 disabled={store.formType === "look"}
                                                 placeholder="请选择工程信息/分支信息"
                                                 options={gcoptions}
