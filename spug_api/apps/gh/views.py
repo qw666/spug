@@ -161,7 +161,7 @@ class TestView(View):
 class WorkFlowView(View):
 
     # 指定测试/重新测试/上线/上线完成
-    # status 是当前工单的执行状态 指定测试为1 重新测试为2 上线为4  上线完成为6
+    # status 是当前工单的执行状态 指定测试为1 重新测试为2 上线为3  上线完成为6
     def patch(self, request):
         form, error = JsonParser(
             Argument('id', type=int, help='参数id不能为空'),
@@ -176,7 +176,15 @@ class WorkFlowView(View):
         if not work_flow:
             return json_response(error='未找到指定对象')
 
-        work_flow.status = form.status
+        if form.status == Status.DELEGATE_TEST.value:
+            work_flow.status = Status.TESTING.value
+        elif form.status == Status.COMPLETE_TEST.value:
+            # 待上线更新sql执行状态
+            work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
+            work_flow.status = Status.UNDER_ONLINE.value
+        else:
+            work_flow.status = form.status
+
         work_flow.updated_by = request.user
         work_flow.updated_at = human_datetime()
         if form.tester_name:
@@ -184,9 +192,6 @@ class WorkFlowView(View):
             work_flow.notify_name = work_flow.developer_name + ',' + form.tester_name
         if form.notify_name:
             work_flow.notify_name = form.notify_name
-        if work_flow.status == Status.UNDER_ONLINE.value:
-            # 待上线更新sql执行状态
-            work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
 
         work_flow.save()
 
