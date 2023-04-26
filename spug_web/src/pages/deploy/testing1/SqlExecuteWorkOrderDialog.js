@@ -87,7 +87,7 @@ export default observer(function () {
         http.get('/api/gh/archery/resource',{
             params:{
                 instance_id:targetOption.id,
-                status:""
+                status:store.sqlExecuteWorkOrderForm.status
             }
         }).then(res => {
             setTimeout(() => {

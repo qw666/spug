@@ -101,7 +101,7 @@ function ComTable() {
         fixed: 'right',
         className: hasPermission('deploy.request.do|deploy.request.edit|deploy.request.approve|deploy.request.del') ? S.min180 : 'none',
         render: info => {
-       /*     if(info.status == 0){
+            if(info.status == 0){
                 return  <Action>
                     <Action.Button onClick={(e) => store.appointDialog(info,"test")} >指定</Action.Button>
                     <Action.Button onClick={() => store.handleDelete(info)}>删除</Action.Button>
@@ -147,8 +147,8 @@ function ComTable() {
                 return  <Action>
                     <Action.Button>同步测试环境</Action.Button>
                 </Action>
-            }*/
-             switch (info.status) {
+            }
+            /* switch (info.status) {
                 default:
                     return <Action>
                         <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
@@ -163,7 +163,7 @@ function ComTable() {
                         <Action.Button onClick={(e) => store.synchronousEnv(info)}>同步测试环境</Action.Button>
 
                     </Action>;
-            }
+            }*/
         }
     }];
     return (
