@@ -205,11 +205,15 @@ def execute_sql(request):
         if Status.TESTING.value == form.status else ExecuteStatus.PROD_EXECUTING.value
     workflow_status = Status.TESTING.value if Status.TESTING.value == form.status else Status.ONLINE.value
 
+    # 更新当前的提测申请的sql执行状态
+    work_flow = WorkFlow.objects.filter(test_demand=form.id).first()
+
     for item in form.databases:
         order_id = 0
         random_code = generate_random_str(6)
         # 针对执行成功的过滤 不再执行
         exist_execute_sql = SqlExecute.objects.filter(sql_type=item.get('sql_type'),
+                                                      workflow=work_flow.id,
                                                       group_id=item.get('group_id'),
                                                       instance=item.get('instance'),
                                                       db_name=item.get('db_name'),
@@ -259,8 +263,6 @@ def execute_sql(request):
         finally:
             create_sql_execute(random_code, order_id, archery_execute_status, form, item, request)
 
-    # 更新当前的提测申请的sql执行状态
-    work_flow = WorkFlow.objects.filter(test_demand=form.id).first()
     work_flow.status = workflow_status
     work_flow.sql_exec_status = sql_exec_status
     work_flow.updated_by = request.user
