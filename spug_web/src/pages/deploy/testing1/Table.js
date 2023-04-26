@@ -146,7 +146,7 @@ function ComTable() {
             }else if(info.status == 7 ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
-                    <Action.Button>同步测试环境</Action.Button>
+                    <Action.Button onClick={(e) => store.synchronousEnv(info)}>同步测试环境</Action.Button>
                 </Action>
             }else{
                 return  <Action>
