@@ -1,24 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import {observer} from "mobx-react";
 import store from "./store";
+import http from 'libs/http';
 import styles from './index.module.less';
-import {Form, Input, Modal, Select, Space, Upload,message} from "antd";
+import {Form, Input, Modal, Select, Space, Upload,message,Button} from "antd";
 import {UploadOutlined} from "@ant-design/icons";
+import { X_TOKEN } from 'libs';
 export default observer(function () {
     const [files, setFiles] = useState([]);
-
+    const [par, setPar] = useState({
+        test_case :"",
+        test_report:"",
+    });
+    const [uploadType, setUploadType] = useState({});
     const [form] = Form.useForm();
     //表单提交
     function appointHandleSubmit() {
         const formData = form.getFieldsValue();
-        console.log(formData);
+        http.patch('/api/gh/test/', {
+            id: store.testsCompleteForm.id,
+            test_case:par.test_case,
+            test_report:par.test_report,
+        }).then(res => {
+            message.success('操作成功');
+            store.fetchRecords();
+            store.testsCompleteVisible = false;
+        })
     }
-    function handleUpload(file, fileList) {
+    function handleUploadChange(info) {
+        console.log(info.file.status);
+    }
+    function handleUpload1(file, fileList) {
+        console.log("uploadType",uploadType);
         console.log(file);
+        file.status= 'done'
         let isTrue = "";
         let FileExt = file.name.replace(/.+\./, "");
         //验证图片格式
-       /* if (["xls", "xlsx"].indexOf(FileExt.toLowerCase()) === -1) {
+        if (["xls", "xlsx"].indexOf(FileExt.toLowerCase()) === -1) {
             isTrue = false;
         } else {
             isTrue = true;
@@ -27,14 +46,31 @@ export default observer(function () {
         if (!isTrue) {
             message.error("只能上传xls、xlsx格式的文件");
             return
-        }*/
-
-        const tmp = files.length > 0 && files[0].type === 'upload' ? [...files] : []
-        for (let file of fileList) {
-            tmp.push({ type: 'upload', name: '本地上传', path: file})
         }
-        setFiles(tmp);
-        return Upload.LIST_IGNORE
+
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        console.log(" console.log(files);",formData);
+        http.post('/api/gh/minio/fileupload/', formData).then((res) => {
+            if(uploadType === "test_case"){
+                setPar({
+                    ...par,
+                    test_case:res
+                })
+            }
+            if(uploadType === "test_report"){
+                setPar({
+                    ...par,
+                    test_report:res
+                })
+            }
+            message.success('保存成功');
+         })
+    }
+    function handleUpload2(file, fileList) {
+
     }
     return(
         <Modal
@@ -72,14 +108,30 @@ export default observer(function () {
                 </Form.Item>
                 <Form.Item required name="name3" label="测试报告" >
                     <Upload
-                        beforeUpload={handleUpload} maxCount={1}>
-                        <Space className="btn"><UploadOutlined/>上传测试报告</Space>
+                        action={"/api/gh/minio/fileupload/"}
+                        beforeUpload={handleUpload1}
+                        headers={{'X-Token': X_TOKEN}}
+                        maxCount={1}
+                        onChange={handleUploadChange}
+                    >
+                        <Space className="btn">
+                        <Button onClick={ () => {
+                            setUploadType("test_report")
+                        }}><UploadOutlined/>上传测试报告</Button>
+                        </Space>
                     </Upload>
                 </Form.Item>
                 <Form.Item required name="name3" label="测试用例" >
                     <Upload
-                        beforeUpload={handleUpload} maxCount={1}>
-                        <Space className="btn"><UploadOutlined/>上传测试用例</Space>
+                        maxCount={1}
+                        action={"/api/gh/minio/fileupload/"}
+                        beforeUpload={handleUpload1}
+                        headers={{'X-Token': X_TOKEN}}
+                    >
+                        <Space className="btn">
+                            <Button onClick={()=>{
+                                setUploadType("test_case")
+                            }}><UploadOutlined/>上传测试用例</Button></Space>
                     </Upload>
                 </Form.Item>
             </Form>

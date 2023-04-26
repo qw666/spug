@@ -234,7 +234,26 @@ export default observer(function () {
     }
     const filter = (inputValue, path) =>
         path.some((option) => option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
+    const downloadFile = (val)=>{
+        console.log(val);
+        http.get('/api/gh/minio/download/',{
+            params: {
+                file_name:val
+            }
+        }).then((res)=>{
+            const blob = new Blob([res])// application/vnd.openxmlformats-officedocument.spreadsheetml.sheet这里表示xlsx类型
+            console.log("blob",blob);
+            const downloadElement = document.createElement('a')
+            const href = window.URL.createObjectURL(blob) // 创建下载的链接
+            downloadElement.href = href
+            downloadElement.download = val; // 下载后文件名
+            document.body.appendChild(downloadElement)
 
+            downloadElement.click() // 点击下载
+            document.body.removeChild(downloadElement) // 下载完成移除元素
+            window.URL.revokeObjectURL(href) // 释放掉blob对象
+        })
+    }
     return (
         <Modal
             visible
@@ -454,6 +473,18 @@ export default observer(function () {
                         </>
                     )}
                 </Form.List>
+                {(store.addForm.test_case !== "" && store.formType === "look")?
+                    <div style={{"marginBottom":"10px"}}>
+                        <Button style={{"marginRight":"10px"}} onClick={ ()=>{downloadFile(store.addForm.test_case)}}>下载测试用例</Button>
+                        {store.addForm.test_case }
+                    </div>
+                    :null}
+                {(store.addForm.test_case !== "" && store.formType === "look")?
+                    <div>
+                        <Button style={{"marginRight":"10px"}} onClick={ ()=>{downloadFile(store.addForm.test_report)}}>下载测试报告</Button>
+                        {store.addForm.test_report }
+                    </div>
+                    :null }
             </Form>
         </Modal>
     )

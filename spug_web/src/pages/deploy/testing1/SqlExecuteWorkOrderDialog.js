@@ -75,7 +75,11 @@ export default observer(function () {
         }
         console.log(formData);
         http.post('/api/gh/archery/execute',formData).then(res=>{
-            message.success('操作成功')
+            if(store.sqlExecuteWorkOrderFormType === "xs"){
+                message.success('SQL工单已经提交,请找管理员审核SQL')
+            }else{
+                message.success('SQL已经执行,请耐心等待')
+            }
             store.fetchRecords();
             store.sqlVisible = false;
         })

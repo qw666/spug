@@ -145,6 +145,7 @@ class Store {
     };
     //查看 和新建申请一个表单
     lookDialog = (e,info)=>{
+        console.log(info);
         if(!Array.isArray(info.developer_name)){
             info.developer_name = info.developer_name.split(",");
         }
