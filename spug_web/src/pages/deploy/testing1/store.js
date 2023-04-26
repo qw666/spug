@@ -3,7 +3,7 @@ import http from 'libs/http';
 import {message, Modal} from "antd";
 import {toJS} from "mobx"
 import lds from "lodash";
-import store from "../testing/store";
+import store from "./store";
 
 class Store {
     @observable projectOneLevelList = [];
