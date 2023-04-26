@@ -273,7 +273,7 @@ class Store {
     };
     //表格 tag状态数值
     _updateCounter = () => {
-        const counter = {'all': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0};
+        const counter = {'all': 0,"0":0,'1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0};
         for (let item of this.tableData) {
             counter['all'] += 1;
             counter[item['status']] += 1

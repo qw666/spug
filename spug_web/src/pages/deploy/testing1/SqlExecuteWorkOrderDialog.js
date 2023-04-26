@@ -74,7 +74,8 @@ export default observer(function () {
             return message.error('请添加数据库配置')
         }
         console.log(formData);
-        http.post('/api/gh/archery/resource',formData).then(res=>{
+        http.post('/api/gh/archery/execute',formData).then(res=>{
+            message.success('操作成功')
             store.fetchRecords();
             store.sqlVisible = false;
         })
