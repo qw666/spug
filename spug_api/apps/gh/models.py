@@ -33,7 +33,8 @@ class WorkFlow(models.Model, ModelMixin):
         (3, '测试完成'),
         (4, '待上线'),
         (5, '上线中'),
-        (6, '上线完成')
+        (6, '上线完成'),
+        (7, '同步环境')
     )
 
     SQL_EXEC_STATUS = (
