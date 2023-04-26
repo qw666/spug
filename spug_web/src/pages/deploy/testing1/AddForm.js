@@ -42,6 +42,7 @@ export default observer(function () {
             setsqlOptions(optionSqlLists);
         })
         //数据库动态加载级联数据
+
     }
     const SQLInspect = ()=>{
         setErrorCount(-1)
@@ -134,7 +135,6 @@ export default observer(function () {
             for (let i = 0; i < projects.length; i++) {
                  for (let j = 0; j < gcoptions.length; j++) {
                      if(projects[i].projectsName.length == 2){
-                         console.log(projects[i].projectsName[0],gcoptions[j]);
                          if(projects[i].projectsName[0] == gcoptions[j].value){
                              projects[i].app_name = projects[i].projectsName[0];
                              projects[i].branch_name = projects[i].projectsName[1];
@@ -150,6 +150,7 @@ export default observer(function () {
         }
 
         let databases = formData.databases;
+        console.log("databases",databases);
         if(databases){
             for (let i = 0; i < databases.length; i++) {
                 for (let j = 0; j < sqloptions.length; j++) {
@@ -165,6 +166,7 @@ export default observer(function () {
                     }else{
                         return message.error('请选择正确的数据库类型/数据库名称')
                     }
+
                 }
             }
         }else{
@@ -398,7 +400,7 @@ export default observer(function () {
                                                 required
                                             >
                                                 <Space size="Large"   style={{marginLeft:"10px"}}>
-                                                    <Radio.Group defaultValue={1}  disabled={store.formType === "look"}>
+                                                    <Radio.Group   disabled={store.formType === "look"}>
                                                         <Radio value={1}>DDL</Radio>
                                                         <Radio value={2}>DML</Radio>
                                                     </Radio.Group>

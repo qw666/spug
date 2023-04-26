@@ -3,6 +3,7 @@ import http from 'libs/http';
 import {message, Modal} from "antd";
 import {toJS} from "mobx"
 import lds from "lodash";
+import store from "../testing/store";
 
 class Store {
     @observable projectOneLevelList = [];
@@ -136,15 +137,10 @@ class Store {
     addDialog = ()=>{
         this.addForm = {};
         this.formType = "add";
-        /*this.addFormProjects = [{
-            projectsName:[ ]
-        }]*/
-     /*   this.getProjectLevelOne();
-        this.getSqlType("");*/
+        store.SqlWarnTable = [];
+        store.SqlErrorTable = [];
         this.addVisible = true;
-       /* setTimeout(()=>{
 
-        },500)*/
 
     };
     //查看 和新建申请一个表单
@@ -200,7 +196,7 @@ class Store {
             title: '运维上线确认',
             content: `确定要运维上线【${info['demand_name']}】?`,
             onOk: () => {
-                return http.delete('/api/deploy/request/', {params: {id: info.id}})
+                return http.get('/api/gh/workflow/', {params: {id: info.id}})
                     .then(() => {
                         message.success('操作成功');
                         //表格数据请求
@@ -215,7 +211,10 @@ class Store {
             title: '上线完成确认',
             content: `确定要上线完成【${info['demand_name']}】?`,
             onOk: () => {
-                return http.delete('/api/deploy/request/', {params: {id: info.id}})
+                return http.patch('/api/gh/workflow/', {
+                    id: info.id,
+                    status:info.status
+                })
                     .then(() => {
                         message.success('操作成功');
                         //表格数据请求
@@ -300,24 +299,6 @@ class Store {
             this.f_s_date = null;
             this.f_e_date = null
         }
-    };
-    //获取工程一级数据
-    getProjectLevelOne = () =>{
-        http.get('/api/gh/app/listApps/').then(res => {
-            this.projectOneLevelList = res;
-        })
-    };
-    //获取数据库级联 一级数据  根据状态请求
-    getSqlType = (status) =>{
-        http.get('/api/gh/archery/instance?status=' + status).then(res => {
-            this.sqlTypeList = res;
-        })
-    };
-    //获取数据库级联 二级数据
-    getSqlName = (id) =>{
-        http.get('/api/gh/archery/resource?instance_id' + id).then(res => {
-
-        })
     };
 
     //同步测试环境

@@ -10,33 +10,29 @@ const { TextArea } = Input;
 function SynchronousEnv(props) {
     const [form] = Form.useForm();
     const [reloadSqlform] = Form.useForm();
-
     //表单提交
     const HandleSubmit = () => {
         const formData = form.getFieldsValue();
-        if(formData.sync_complete){
-            formData.sync_complete.toString()
-        }else{
-            return message.error("请指定同步测试环境")
-        }
+        console.log(formData);
         http.post('/api/gh/archery/sync/',{
-            id:store.synchronousEnvForm.id,
+           id:store.synchronousEnvForm.id,
             demand_name:formData.demand_name,
             demand_link:formData.demand_link,
             sync_env:formData.sync_env.toString(),
-            sync_complete:formData.sync_complete,
+            sync_complete:formData.sync_complete.toString(),
         }).then(res => {
 
         })
-
     };
     //重新执行
     const reloadSqlSumbit= () => {
         const reloadSqlformData = reloadSqlform.getFieldsValue();
         console.log(store.synchronousEnvForm.id);
         console.log(reloadSqlformData);
-        http.patch('/api/gh/archery/sync/', {id: store.synchronousEnvForm.id, sql_content: reloadSqlformData.sql_content})
-            .then(() => {
+        http.patch('/api/gh/archery/sync/', {
+            id: store.synchronousEnvForm.id,
+            sql_content: reloadSqlformData.sql_content
+        }).then(() => {
                 message.success('操作成功');
                 store.synchronousEnvGetData(store.synchronousEnvForm);
         })

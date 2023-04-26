@@ -93,6 +93,15 @@ export default [{
       {key: 'approve', label: '审核申请'},
       {key: 'do', label: '执行发布'}
     ]
+  },{
+    key: 'testing',
+    label: '提测申请',
+    perms: [
+      {key: 'view', label: '查看申请'},
+      {key: 'add', label: '新建申请'},
+      {key: 'edit', label: '编辑申请'},
+      {key: 'del', label: '删除申请'},
+    ]
   }]
 }, {
   key: 'schedule',

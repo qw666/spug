@@ -16,6 +16,7 @@ import styles from './layout.module.less';
 
 function initRoutes(Routes, routes) {
   for (let route of routes) {
+    console.log(route);
     if (route.component) {
       if (!route.auth || hasPermission(route.auth)) {
         Routes.push(<Route exact key={route.path} path={route.path} component={route.component}/>)
@@ -24,6 +25,7 @@ function initRoutes(Routes, routes) {
       initRoutes(Routes, route.child)
     }
   }
+  console.log("Routes",Routes);
 }
 
 export default function () {
