@@ -249,8 +249,10 @@ class WorkFlowView(View):
             req = DeployRequest.objects.create(created_by=request.user, **form)
             item.deploy_request_id = req.id
             item.save()
-            # TODO 运维申请发送邮件
-            Thread(target=Helper.send_deploy_notify, args=(req, 'approve_req')).start()
+            # 运维申请发送邮件
+            is_required_notify = deploy.is_audit
+            if is_required_notify:
+                Thread(target=Helper.send_deploy_notify, args=(req, 'approve_req')).start()
         return json_response(error=error)
 
 
