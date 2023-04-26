@@ -232,7 +232,7 @@ class Store {
             title: '删除确认',
             content: `确定要删除【${info['demand_name']}】?`,
             onOk: () => {
-                return http.delete('/api/deploy/request/', {params: {id: info.id}})
+                return http.delete('/api/gh/test/', {params: {id: info.id}})
                     .then(() => {
                         message.success('删除成功');
                         //表格数据请求
@@ -326,14 +326,7 @@ class Store {
 
         })
     };
-    //sql检查
-    getSqlIinspect = (data) =>{
-        http.post('/api/gh/archery/check/',{
-            data
-        }).then(res => {
 
-        })
-    };
     //同步测试环境
     synchronousEnv = (info) =>{
         this.synchronousEnvForm = info;

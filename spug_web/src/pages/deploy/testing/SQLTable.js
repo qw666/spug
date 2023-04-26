@@ -7,25 +7,29 @@ function SQLTable(props) {
     const columns1 = [
         {
             title: 'sql内容',
-            dataIndex: 'street1',
-            key: 'street1',
+            dataIndex: 'sql',
+            key: 'sql',
+            ellipsis: true,
         },
         {
             title: '警告信息',
-            dataIndex: 'street2',
-            key: 'street2',
+            dataIndex: 'message',
+            key: 'message',
+            ellipsis: true,
         },
     ];
     const columns2 = [
         {
             title: 'sql内容',
-            dataIndex: 'street1',
-            key: 'street1',
+            dataIndex: 'sql',
+            key: 'sql',
+            ellipsis: true,
         },
         {
             title: '错误信息',
-            dataIndex: 'street2',
-            key: 'street2',
+            dataIndex: 'message',
+            key: 'message',
+            ellipsis: true,
         },
     ];
 /*    store.setSqlTable(props.form);*/

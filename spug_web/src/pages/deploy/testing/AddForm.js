@@ -26,7 +26,6 @@ export default observer(function () {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     function getSqlType() {
-        console.log(1);
         http.get('/api/gh/archery/instance?status='+"" ).then(res => {
             const optionSqlLists = [];
             let sqlData = res;
@@ -44,6 +43,9 @@ export default observer(function () {
         })
         //数据库动态加载级联数据
 
+    }
+    const SQLInspect = ()=>{
+        setErrorCount(-1)
     }
     function fetchProject() {
         http.get('/api/gh/app/listApps/').then(res => {
@@ -121,6 +123,13 @@ export default observer(function () {
     //表单提交
     function handleSubmit() {
         const formData = form.getFieldsValue();
+        console.log(formData);
+        if(formData.developer_name){
+            formData.developer_name = formData.developer_name.toString();
+        }
+        if(formData.tester_name){
+            formData.tester_name = formData.tester_name.toString();
+        }
         let projects = formData.projects;
         if(projects){
             for (let i = 0; i < projects.length; i++) {
@@ -163,7 +172,16 @@ export default observer(function () {
         }else{
             return message.error('请添加数据库配置')
         }
-
+        if(errorCount !== 0){
+            return message.error('请SQL检查')
+        }
+        http.post('/api/gh/test/', formData).then((res)=>{
+            if(res == "success"){
+                message.success('操作成功');
+                store.fetchRecords();
+                store.addVisible = false;
+            }
+        })
     }
     function handleInspct() {
         let formData = form.getFieldsValue();
@@ -195,9 +213,15 @@ export default observer(function () {
         let temp = [];
         http.post('/api/gh/archery/check',{
             databases:databases
-        }).then(
-
-        )
+        }).then((res)=>{
+            let data = res;
+            setErrorCount(data.error_count);
+            store.SqlErrorTable = data.error_group;
+            store.SqlWarnTable =data.warning_group;
+            if(data.error_count === 0){
+                message.success('操作成功')
+            }
+        })
 
        /* this.SqlWarnTable = Object.values(toJS(temp))
         this.SqlErrorTable = Object.values(toJS(temp))*/
@@ -407,7 +431,7 @@ export default observer(function () {
                                                 name={[field.name, 'sql_content']}
                                                 required
                                             >
-                                                <TextArea  disabled={store.formType === "look"} style={{marginLeft:"10px"}} rows={4} />
+                                                <TextArea   onChange={SQLInspect}  disabled={store.formType === "look"} style={{marginLeft:"10px"}} rows={4} />
 
                                             </Form.Item>
                                         </Col>
