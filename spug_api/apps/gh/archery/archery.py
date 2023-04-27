@@ -200,6 +200,20 @@ def execute_sql(request):
     headers = {
         'Authorization': f'Bearer {token}'
     }
+    #  先执行sql检查
+    error_count = 0
+    for item in form.databases:
+        payload = {'instance_id': item.get('instance'), 'db_name': item.get('db_name'),
+                   'full_sql': item.get('sql_content')}
+        response = requests.post(url=settings.CHECK_SQL_URL, json=payload, headers=headers)
+        if response.status_code != 200:
+            return json_response(error='sql检查失败，请联系管理员！')
+
+        for row in response.json().get('rows'):
+            if row.get('errlevel') == 2:
+                error_count += 1
+    if error_count > 0:
+        return json_response(error='当前执行的sql检查失败，禁止提交，请联系管理员！')
 
     sql_exec_status = ExecuteStatus.TEST_EXECUTING.value \
         if Status.TESTING.value == form.status else ExecuteStatus.PROD_EXECUTING.value

@@ -39,7 +39,8 @@ def send_email(subject, message, recipient_list, file_names, record_item):
     )
 
     try:
-        email.to = list(UserExtend.objects.values_list('email', flat=True).filter(nickname__in=recipient_list))
+        recipient_list = list(UserExtend.objects.values_list('email', flat=True).filter(nickname__in=recipient_list))
+        email.to = recipient_list
         if file_names:
             for file_name in file_names:
                 file_data = MINIO_CLIENT.get_object(MINIO_STORAGE_BUCKET_NAME, file_name)
