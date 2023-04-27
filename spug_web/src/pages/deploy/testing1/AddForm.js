@@ -13,7 +13,7 @@ export default observer(function () {
     const [gcoptions, setgcOptions] = useState([]);
     const [sqloptions, setsqlOptions] = useState([]);
     const [errorCount, setErrorCount] = useState(-1);
-
+    const [loading, setLoading] = useState(false);
     useEffect(() => {
         fetchProject();
         getSqlType();
@@ -153,13 +153,15 @@ export default observer(function () {
         if(errorCount !== 0){
             return message.error('请SQL检查')
         }
+        setLoading(true);
         http.post('/api/gh/test/', formData).then((res)=>{
             if(res === "success"){
+                setLoading(false);
                 message.success('操作成功');
                 store.fetchRecords();
                 store.addVisible = false;
             }
-        })
+         })
     }
     function handleInspct() {
         let formData = form.getFieldsValue();
@@ -245,6 +247,7 @@ export default observer(function () {
                         <Button
                             type="primary"
                             key="ok"
+                            loading={loading}
                             onClick={handleSubmit}
                         >
                             提交

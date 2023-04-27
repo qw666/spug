@@ -170,7 +170,7 @@ class Store {
             onOk: () => {
                return  http.patch('/api/gh/workflow/', {
                         id: info.id,
-                        status: info.status
+                        status: 2
                     }
                 ).then(res => {
                     message.success('操作成功');
