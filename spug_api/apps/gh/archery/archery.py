@@ -435,6 +435,7 @@ def sync_archery_sql_execute_status():
 
 
 def get_sql_execute_status(status, status_set):
+    sql_exec_status = 0
     if status == Status.ONLINE.value:
         if SqlExecuteStatus.FAILURE.value in status_set:
             sql_exec_status = ExecuteStatus.PROD_EXCEPTION.value

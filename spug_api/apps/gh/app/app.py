@@ -23,6 +23,7 @@ def list_apps(request):
         return json_response(apps)
     return json_response(error=error)
 
+
 # 查询应用版本号列表
 @auth('deploy.app.config|deploy.repository.add|deploy.request.add|deploy.request.edit')
 def get_versions(request, d_id):
