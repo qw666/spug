@@ -73,7 +73,7 @@ class TestView(View):
                                          for item in form.databases]
                 DatabaseConfig.objects.bulk_create(batch_database_config)
 
-        # 提交测试申请 发生邮件
+        # 提交测试申请 发邮件
         subject = f'【spug通知】{test_demand_id.demand_name}提测申请'
         message = f'{test_demand_id.demand_name}提测申请，请前往指定测试人员'
         recipient_list = work_flow.notify_name.split(",")
@@ -83,7 +83,7 @@ class TestView(View):
             'user': request.user,
             'demand': test_demand_id
         }
-        send_email(subject, message, recipient_list, file_names, record_item)
+        Thread(target=send_email, args=(subject, message, recipient_list, file_names, record_item)).start()
         return json_response(data='success')
 
     # 查询提测申请
@@ -154,7 +154,7 @@ class TestView(View):
             'user': request.user,
             'demand': test_demand
         }
-        send_email(subject, message, recipient_list, file_names, record_item)
+        Thread(target=send_email, args=(subject, message, recipient_list, file_names, record_item)).start()
         return json_response(data='success')
 
 
@@ -215,7 +215,7 @@ class WorkFlowView(View):
                 'user': request.user,
                 'demand': test_demand
             }
-            send_email(subject, message, recipient_list, file_names, record_item)
+            Thread(target=send_email, args=(subject, message, recipient_list, file_names, record_item)).start()
 
         return json_response(data='success')
 

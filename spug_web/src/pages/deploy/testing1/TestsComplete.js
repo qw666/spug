@@ -28,7 +28,7 @@ export default observer(function () {
 
 
             const testCaseFileData = new FormData();
-            testCaseFileData.append('file', fileListReport.file);
+            testCaseFileData.append('file', fileListTestCase.file);
 
             const report = http.post('/api/gh/minio/fileupload/', reportFileData);
             const testCase = http.post('/api/gh/minio/fileupload/', testCaseFileData);
