@@ -8,7 +8,7 @@ from apps.gh.views import sync_deploy_request_status, notify_sync_test_env_datab
 scheduler = BackgroundScheduler()
 
 # 2.调度器使用DjangoJobStore()
-scheduler.add_jobstore(DjangoJobStore(), "default")
+# scheduler.add_jobstore(DjangoJobStore(), "default")
 
 try:
     # 3.设置定时任务，选择方式为interval，时间间隔为10s
