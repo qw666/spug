@@ -303,6 +303,7 @@ class Store {
     synchronousEnvGetData = (info)=>{
         http.get('/api/gh/archery/sync?id=' + info.id).then(res => {
             this.synchronousEnvForm.sync_complete = res.sync_complete;
+            this.synchronousEnvForm.sync_status = res.sync_status;
             this.synchronousEnvTableData = res.execute_record;
             this.synchronousEnvVisible = true;
         })

@@ -94,6 +94,7 @@ function SynchronousEnv(props) {
         {
             title: '操作',
             fixed: 'right',
+            key: 'cz',
             width: 80,
             render:info => {
                 switch (info.status) {
@@ -111,7 +112,12 @@ function SynchronousEnv(props) {
             visible
             width={1000}
             maskClosable={false}
-            title="同步测试环境"
+            title={"同步测试环境 ---- "+
+            (store.synchronousEnvForm.sync_status === 0?"待同步":
+                store.synchronousEnvForm.sync_status === 1?"同步中":
+                    store.synchronousEnvForm.sync_status === 2?"同步完成":
+                        store.synchronousEnvForm.sync_status === 3?" 同步失败":""
+            )}
             onCancel={() => store.synchronousEnvVisible = false}
             onOk={HandleSubmit}>
             <Form form={form} initialValues={store.synchronousEnvForm}  >
@@ -160,6 +166,7 @@ function SynchronousEnv(props) {
                 </Row>
                 <Divider orientation="left">SQL同步记录</Divider>
                 <Table
+                    rowKey={row => row.key || row.id}
                     columns={tableColumns}
                     dataSource={store.synchronousEnvTableData}
                     bordered
