@@ -70,7 +70,6 @@ class Store {
             return date >= this.f_s_date && date <= this.f_e_date
         });
         if (this.f_status !== 'all') {
-            console.log(this.f_status);
             if(this.f_status === "6"){
                 data = data.filter((x)=>{
                     return x.status == 7 || x.status == 6;
