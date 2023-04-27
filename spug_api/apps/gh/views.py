@@ -198,9 +198,9 @@ class WorkFlowView(View):
         work_flow.save()
 
         # 指定测试人员发送邮件通知
-        if work_flow.status in [Status.DELEGATE_TEST.value, Status.COMPLETE_ONLINE.value]:
+        if form.status in [Status.DELEGATE_TEST.value, Status.COMPLETE_ONLINE.value]:
             test_demand = TestDemand.objects.filter(pk=form.id).first()
-            if work_flow.status == Status.DELEGATE_TEST.value:
+            if form.status == Status.DELEGATE_TEST.value:
                 subject = f'【spug通知】{test_demand.demand_name}待测试'
                 message = f'{test_demand.demand_name}待测试'
                 file_names = None
@@ -211,7 +211,7 @@ class WorkFlowView(View):
 
             recipient_list = work_flow.notify_name.split(",")
             record_item = {
-                'status': work_flow.status,
+                'status': form.status,
                 'user': request.user,
                 'demand': test_demand
             }
