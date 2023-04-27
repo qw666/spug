@@ -31,7 +31,7 @@ try:
         except Exception as error:
             print(error)
 
-    @register_job(scheduler, "interval", minutes=15, replace_existing=True)
+    @register_job(scheduler, "interval", minutes=60, replace_existing=True)
     def notify_sync_test_env_databases_task():
         # 定时任务 通知同步环境
         try:

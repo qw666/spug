@@ -9,7 +9,7 @@ from django.views import View
 
 from apps.gh.enum import Status, OrderStatus, ExecuteStatus, SqlExecuteStatus, SyncStatus
 from apps.gh.models import WorkFlow, SqlExecute, DatabaseConfig
-from libs import json_response, JsonParser, Argument, human_datetime, generate_random_str
+from libs import json_response, JsonParser, Argument, human_datetime, parse_time, generate_random_str
 from spug import settings
 
 
@@ -447,6 +447,7 @@ class SyncView(View):
         execute_env = {item.db_name.split(sep='_')[-1] for item in executes}
 
         result = dict()
+        result['sync_status'] = workflow.sync_status
         result['sync_complete'] = list(execute_env)
         result['execute_record'] = list(workflow.orders.filter(sync_env='test')
                                         .values('id', 'sql_type', 'db_type', 'db_name', 'status', 'sql_content'))
@@ -466,17 +467,23 @@ class SyncView(View):
             return json_response(error=error)
 
         # 校验sql哪些环境执行 和执行顺序
-        workflow = WorkFlow.objects.filter(test_demand=form.id).first()
-
-        need_sync_workflow = WorkFlow.objects.filter(status=Status.SYNC_ENV.ONLINE.value, is_sync=0)
-        for item in list(need_sync_workflow):
-            # TODO 做测试 parse_time 特殊环境233的不需要校验
-            if item.updated_at < workflow.updated_at:
-                return json_response(error='请先同步' + item.test_demand.demand_name)
-
         sync_env = set(form.sync_env).difference(set(form.sync_complete))
         if not sync_env:
             return json_response(error='没有需要同步的环境，请重新选择！')
+
+        workflow = WorkFlow.objects.filter(test_demand=form.id).first()
+        executes = list(workflow.orders.filter(sync_env='test'))
+        passed_sync_env = {item.db_name.split(sep='_')[-1] for item in executes}
+        if passed_sync_env:
+            passed_sync_env_flag = set(sync_env).difference(set(passed_sync_env))
+            if not passed_sync_env_flag:
+                return json_response(error='正在同步中，请稍后重试！')
+
+        need_sync_workflow = WorkFlow.objects.filter(status=Status.SYNC_ENV.value, is_sync=0)
+        for item in list(need_sync_workflow):
+            # TODO 做测试 parse_time
+            if item.id != workflow.id and parse_time(item.updated_at) < parse_time(workflow.updated_at):
+                return json_response(error='请先同步' + item.test_demand.demand_name)
 
         username = request.user.username
         response_token = get_auth_token('chenqi')
@@ -538,7 +545,7 @@ class SyncView(View):
                     create_sync_sql_execute(random_code, env, order_id, instance,
                                             archery_execute_status, workflow, form, item, request)
 
-        workflow.status = SyncStatus.SYNCHRONIZING.value
+        workflow.sync_status = SyncStatus.SYNCHRONIZING.value
         workflow.save()
         return json_response(error=error)
 

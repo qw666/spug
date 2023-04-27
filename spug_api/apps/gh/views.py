@@ -292,7 +292,9 @@ def notify_sync_test_env_databases():
         for workflow in list(need_sync_workflow):
             executes = list(workflow.orders.filter(sync_env='test'))
             sync_env = {item.db_name.split(sep='_')[-1] for item in executes}
-            if settings.SYNC_ENV.difference(sync_env):
+            status = {item.status for item in executes}
+
+            if settings.SYNC_ENV.difference(sync_env) or status != {1}:
                 # TODO 是否发送邮件
                 print('通知测试同步环境')
             else:
