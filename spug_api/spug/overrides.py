@@ -60,6 +60,7 @@ EMAIL_USE_SSL = True  # 是否使用SSL加密，qq企业邮箱要求使用
 EMAIL_HOST_USER = 'chenqi@gohigh.com.cn'
 EMAIL_HOST_PASSWORD = 'Qichen8906'
 DEFAULT_FROM_EMAIL = 'chenqi@gohigh.com.cn'
+EMAIL_USE_LOCALTIME = True
 
 # Archery sql 审核平台相关配置
 DATABASE_TEST_ENV = 'test'
