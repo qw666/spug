@@ -7,7 +7,7 @@ from apps.app.models import Deploy
 from apps.deploy.models import DeployRequest
 from apps.gh.app.app import fetch_versions
 from apps.gh.email.email import send_email
-from apps.gh.enum import Status, ExecuteStatus
+from apps.gh.enum import Status, ExecuteStatus, SqlExecuteStatus
 from apps.gh.helper import Helper
 from apps.gh.models import TestDemand, WorkFlow, DevelopProject, DatabaseConfig, SqlExecute
 from apps.repository.models import Repository
@@ -282,7 +282,7 @@ def sync_deploy_request_status():
             item.save()
 
 
-# 定时任务 通知发布的人
+# 定时任务 通知需要同步环境的人
 def notify_sync_test_env_databases():
     # 获取需要通知的提测申请
     need_sync_workflow = WorkFlow.objects.filter(status=Status.SYNC_ENV.value,
@@ -294,9 +294,6 @@ def notify_sync_test_env_databases():
             sync_env = {item.db_name.split(sep='_')[-1] for item in executes}
             status = {item.status for item in executes}
 
-            if settings.SYNC_ENV.difference(sync_env) or status != {1}:
+            if settings.SYNC_ENV.difference(sync_env) or status != {SqlExecuteStatus.SUCCESS.value}:
                 # TODO 是否发送邮件
                 print('通知测试同步环境')
-            else:
-                workflow.is_sync = True
-                workflow.save()

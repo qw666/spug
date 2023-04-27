@@ -423,6 +423,14 @@ def sync_archery_sql_execute_status():
                 workflow.sync_status = SyncStatus.SYNCHRONIZING.value
             else:
                 workflow.sync_status = SyncStatus.SYNCHRONIZE_FINISH.value
+                # 修改同步标识
+                executes = list(workflow.orders.filter(sync_env='test'))
+                sync_env = {item.db_name.split(sep='_')[-1] for item in executes}
+                status = {item.status for item in executes}
+                if settings.SYNC_ENV.difference(sync_env) or status != {1}:
+                    continue
+                else:
+                    workflow.is_sync = True
         workflow.save()
 
 
