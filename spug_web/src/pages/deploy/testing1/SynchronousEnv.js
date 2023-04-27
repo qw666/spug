@@ -1,4 +1,4 @@
-import React from 'react';
+import React  ,{ useState, useEffect }from 'react';
 import { observer } from 'mobx-react';
 import {Col, Divider, Form, Input, message, Modal, Row, Select, Table, Tag} from "antd";
 import store from "./store";
@@ -10,10 +10,10 @@ const { TextArea } = Input;
 function SynchronousEnv(props) {
     const [form] = Form.useForm();
     const [reloadSqlform] = Form.useForm();
+
     //表单提交
     const HandleSubmit = () => {
         const formData = form.getFieldsValue();
-        console.log(formData);
         if(formData.sync_complete){
             formData.sync_complete.toString()
         }else{
@@ -23,7 +23,7 @@ function SynchronousEnv(props) {
            id:store.synchronousEnvForm.id,
             demand_name:formData.demand_name,
             demand_link:formData.demand_link,
-            sync_env:formData.sync_env.toString(),
+            sync_env:formData.sync_env,
             sync_complete:formData.sync_complete
         }).then(res => {
 
@@ -32,10 +32,8 @@ function SynchronousEnv(props) {
     //重新执行
     const reloadSqlSumbit= () => {
         const reloadSqlformData = reloadSqlform.getFieldsValue();
-        console.log(store.synchronousEnvForm.id);
-        console.log(reloadSqlformData);
         http.patch('/api/gh/archery/sync', {
-            id: store.synchronousEnvForm.id,
+            id: store.reloadSqlCurData.id,
             sql_content: reloadSqlformData.sql_content
         }).then(() => {
                 message.success('操作成功');
@@ -133,7 +131,7 @@ function SynchronousEnv(props) {
 
                 <Row>
                     <Col span={24}>
-                        <Form.Item labelCol={{span: 4}} wrapperCol={{span: 19}}  required name="sync_env" label="已同步测试环境" >
+                        <Form.Item labelCol={{span: 4}} wrapperCol={{span: 19}}  required name="sync_complete" label="已同步测试环境" >
                             <Select
                                 mode="multiple"
                                 allowClear
@@ -148,7 +146,7 @@ function SynchronousEnv(props) {
                 </Row>
                 <Row>
                     <Col span={24}>
-                        <Form.Item labelCol={{span: 4}} wrapperCol={{span: 19}}  required name="sync_complete" label="指定同步测试环境" >
+                        <Form.Item labelCol={{span: 4}} wrapperCol={{span: 19}}  required name="sync_env" label="指定同步测试环境" >
                             <Select
                                 mode="multiple"
                                 allowClear

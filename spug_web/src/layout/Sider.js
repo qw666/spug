@@ -27,7 +27,6 @@ export default function Sider(props) {
       const menu = handleRoute(item)
       tmp.push(menu)
     }
-    console.log("tmp",tmp);
     setMenus(tmp)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

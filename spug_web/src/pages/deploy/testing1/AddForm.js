@@ -29,7 +29,6 @@ export default observer(function () {
         http.get('/api/gh/archery/instance?status='+"" ).then(res => {
             const optionSqlLists = [];
             let sqlData = res;
-            console.log("sqlData",sqlData);
             for (let i = 0; i < sqlData.length; i++) {
                 optionSqlLists.push({
                     value:sqlData[i].db_type,
@@ -51,7 +50,6 @@ export default observer(function () {
         http.get('/api/gh/app/listApps/').then(res => {
             let gcData = res;
             let optionGCLists = [];
-            console.log("gcData",gcData);
             for (let i = 0; i < gcData.length; i++) {
                 optionGCLists.push({
                     value:gcData[i].name,
@@ -66,10 +64,8 @@ export default observer(function () {
     const gcloadData = (selectedOptions) => {
         const targetOption = selectedOptions[selectedOptions.length - 1];
         let deploy_id = targetOption.deploy_id;
-        console.log("targetOption",targetOption);
         targetOption.loading = true;
         http.get('/api/gh/app/deploy/'+ deploy_id +'/versions/' ).then(res => {
-            console.log(res);
             // load options lazily
             setTimeout(() => {
                 targetOption.loading = false;
@@ -82,20 +78,13 @@ export default observer(function () {
                         value: val[i]
                     })
                 }
-                console.log("targetOption",targetOption);
                 setgcOptions([...gcoptions]);
             }, 2000);
         })
     };
 
-
-
-    const sqlonChange = (value, selectedOptions) => {
-        console.log(value, selectedOptions);
-    };
     const sqlloadData = (selectedOptions) => {
         const targetOption = selectedOptions[selectedOptions.length - 1];
-        console.log("targetOption",targetOption);
         targetOption.loading = true;
         http.get('/api/gh/archery/resource',{
             params:{
@@ -123,7 +112,6 @@ export default observer(function () {
     //表单提交
     function handleSubmit() {
         const formData = form.getFieldsValue();
-        console.log(formData);
         if(formData.developer_name){
             formData.developer_name = formData.developer_name.toString();
         }
@@ -150,13 +138,10 @@ export default observer(function () {
         }
 
         let databases = formData.databases;
-        console.log("databases",databases);
         if(databases){
             for (let i = 0; i < databases.length; i++) {
                 for (let j = 0; j < sqloptions.length; j++) {
-                    console.log(databases[i].databasesName.length);
                     if(databases[i].databasesName.length == 2){
-                        console.log(databases[i].databasesName[0], sqloptions[j]);
                         if(databases[i].databasesName[0] == sqloptions[j].value){
                             databases[i].db_type = databases[i].databasesName[0];
                             databases[i].instance = sqloptions[j].id;
@@ -187,13 +172,11 @@ export default observer(function () {
         let formData = form.getFieldsValue();
 
         let databases = formData.databases;
-        console.log("databases",databases);
+
         if(databases){
             for (let i = 0; i < databases.length; i++) {
                 for (let j = 0; j < sqloptions.length; j++) {
-                    console.log(databases[i].databasesName.length);
                     if(databases[i].databasesName.length == 2){
-                        console.log(databases[i].databasesName[0], sqloptions[j]);
                         if(databases[i].databasesName[0] == sqloptions[j].value){
                             databases[i].db_type = databases[i].databasesName[0];
                             databases[i].instance = sqloptions[j].id;
@@ -219,7 +202,7 @@ export default observer(function () {
             store.SqlErrorTable = data.error_group;
             store.SqlWarnTable =data.warning_group;
             if(data.error_count === 0){
-                message.success('操作成功')
+                message.success('SQL检查通过,可以提交提测申请')
             }
         })
 
@@ -235,14 +218,12 @@ export default observer(function () {
     const filter = (inputValue, path) =>
         path.some((option) => option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
     const downloadFile = (val)=>{
-        console.log(val);
         http.get('/api/gh/minio/download/',{
             params: {
                 file_name:val
             }
         }).then((res)=>{
             const blob = new Blob([res])// application/vnd.openxmlformats-officedocument.spreadsheetml.sheet这里表示xlsx类型
-            console.log("blob",blob);
             const downloadElement = document.createElement('a')
             const href = window.URL.createObjectURL(blob) // 创建下载的链接
             downloadElement.href = href
@@ -402,7 +383,6 @@ export default observer(function () {
                                                            placeholder="请选择数据库类型/数据库名称"
                                                            options={sqloptions}
                                                            loadData={sqlloadData}
-                                                           onChange={sqlonChange}
                                                            changeOnSelect />
                                             </Form.Item>
                                         </Col>

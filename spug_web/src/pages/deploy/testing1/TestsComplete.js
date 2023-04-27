@@ -12,23 +12,44 @@ export default observer(function () {
         test_report:"",
     });
     const [uploadType, setUploadType] = useState({});
+    const [fileListReport, setFileListReport] = useState({});
+    const [fileListTestCase, setFileListTestCase] = useState({});
+
+
     const [form] = Form.useForm();
     //表单提交
     function appointHandleSubmit() {
-        const formData = form.getFieldsValue();
-        http.patch('/api/gh/test/', {
-            id: store.testsCompleteForm.id,
-            test_case:par.test_case,
-            test_report:par.test_report,
-        }).then(res => {
-            message.success('操作成功');
-            store.fetchRecords();
-            store.testsCompleteVisible = false;
-        })
+        if(JSON.stringify(fileListReport) === '{}'){
+            message.error('请上传测试报告');
+            return false
+        }
+        if(JSON.stringify(fileListTestCase) === '{}'){
+            message.error('请上传测试用例');
+            return false
+        }
+            const reportFileData = new FormData();
+            reportFileData.append('file', fileListReport.file);
+
+
+            const testCaseFileData = new FormData();
+            testCaseFileData.append('file', fileListReport.file);
+
+            const report = http.post('/api/gh/minio/fileupload/', reportFileData);
+            const testCase = http.post('/api/gh/minio/fileupload/', testCaseFileData);
+           Promise.all([report,testCase]).then((res) => {
+               http.patch('/api/gh/test/', {
+                   id: store.testsCompleteForm.id,
+                   test_case:res[1],
+                   test_report:res[0]
+               }).then(res => {
+                   message.success('操作成功');
+                   store.fetchRecords();
+                   store.testsCompleteVisible = false;
+               })
+           });
+
     }
-    function handleUploadChange(info) {
-        console.log(info.file.status);
-    }
+
     function handleUpload1(file, fileList) {
         let isTrue = "";
         let FileExt = file.name.replace(/.+\./, "");
@@ -44,29 +65,22 @@ export default observer(function () {
             return
         }
 
-        const formData = new FormData();
-        formData.append('file', file);
+        //测试报告
+        if(uploadType === "test_report"){
+            setFileListReport({
+                ...fileListReport, file
+            });
+        }
+        //测试用例
+        if(uploadType === "test_case"){
+            setFileListTestCase({
+                ...fileListTestCase, file
+            });
+        }
 
-        console.log(" console.log(files);",formData);
-        http.post('/api/gh/minio/fileupload/', formData).then((res) => {
-            if(uploadType === "test_case"){
-                setPar({
-                    ...par,
-                    test_case:res
-                })
-            }
-            if(uploadType === "test_report"){
-                setPar({
-                    ...par,
-                    test_report:res
-                })
-            }
-            message.success('保存成功');
-         })
+        return false;
     }
-    function handleUpload2(file, fileList) {
 
-    }
     return(
         <Modal
             visible
@@ -107,7 +121,6 @@ export default observer(function () {
                         beforeUpload={handleUpload1}
                         headers={{'X-Token': X_TOKEN}}
                         maxCount={1}
-                        onChange={handleUploadChange}
                     >
                         <Space className="btn">
                         <Button onClick={ () => {
@@ -119,7 +132,7 @@ export default observer(function () {
                 <Form.Item required name="name3" label="测试用例" >
                     <Upload
                         maxCount={1}
-                        action={"/api/gh/minio/fileupload/"}
+
                         beforeUpload={handleUpload1}
                         headers={{'X-Token': X_TOKEN}}
                     >

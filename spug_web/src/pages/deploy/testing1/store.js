@@ -6,6 +6,7 @@ import lds from "lodash";
 import store from "./store";
 
 class Store {
+    @observable reloadSqlCurData = {};
     @observable projectOneLevelList = [];
     @observable sqlTypeList = [];
     @observable f_status = 'all';
@@ -145,7 +146,6 @@ class Store {
     };
     //查看 和新建申请一个表单
     lookDialog = (e,info)=>{
-        console.log(info);
         if(!Array.isArray(info.developer_name)){
             info.developer_name = info.developer_name.split(",");
         }
@@ -287,29 +287,19 @@ class Store {
     //同步测试环境
     synchronousEnv = (info) =>{
         this.synchronousEnvForm = info;
-        this.synchronousEnvForm.sync_env = ["test230"];
-        this.synchronousEnvTableData = [{
-            "db_type": "mysql",
-            "instance": 1,
-            "db_name": "gh_cloud_sys_test230",
-            "group_id": 2,
-            "sql_type": 1,
-            "sql_content": "mysql",
-            "status": 2
-    }];
         this.synchronousEnvGetData(info);
-        this.synchronousEnvVisible = true;
-
     };
     //同步测试环境 查询接口
     synchronousEnvGetData = (info)=>{
         http.get('/api/gh/archery/sync?id=' + info.id).then(res => {
-            this.synchronousEnvForm.sync_env = res.sync_complete;
+            this.synchronousEnvForm.sync_complete = res.sync_complete;
             this.synchronousEnvTableData = res.execute_record;
+            this.synchronousEnvVisible = true;
         })
     }
     reloadSqlCont = (info)=>{
        this.reloadSqlVisible = true;
+       this.reloadSqlCurData = info;
     }
 
 }

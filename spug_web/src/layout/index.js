@@ -25,7 +25,6 @@ function initRoutes(Routes, routes) {
       initRoutes(Routes, route.child)
     }
   }
-  console.log("Routes",Routes);
 }
 
 export default function () {

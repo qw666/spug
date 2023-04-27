@@ -56,9 +56,7 @@ export default observer(function () {
         if(databases){
             for (let i = 0; i < databases.length; i++) {
                 for (let j = 0; j < sqloptions.length; j++) {
-                    console.log(databases[i].databasesName.length);
                     if(databases[i].databasesName.length == 2){
-                        console.log(databases[i].databasesName[0], sqloptions[j]);
                         if(databases[i].databasesName[0] == sqloptions[j].value){
                             databases[i].db_type = databases[i].databasesName[0];
                             databases[i].instance = sqloptions[j].id;
@@ -73,7 +71,6 @@ export default observer(function () {
         }else{
             return message.error('请添加数据库配置')
         }
-        console.log(formData);
         http.post('/api/gh/archery/execute',formData).then(res=>{
             if(store.sqlExecuteWorkOrderFormType === "xs"){
                 message.success('SQL工单已经提交,请找管理员审核SQL')
@@ -87,7 +84,6 @@ export default observer(function () {
 
     const sqlloadData = (selectedOptions) => {
         const targetOption = selectedOptions[selectedOptions.length - 1];
-        console.log("targetOption",targetOption);
         targetOption.loading = true;
         http.get('/api/gh/archery/resource',{
             params:{
