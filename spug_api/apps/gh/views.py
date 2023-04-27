@@ -3,6 +3,7 @@ from threading import Thread
 from django.db import transaction
 from django.views import View
 
+from apps.account.models import User
 from apps.app.models import Deploy
 from apps.deploy.models import DeployRequest
 from apps.gh.app.app import fetch_versions
@@ -285,8 +286,7 @@ def sync_deploy_request_status():
 # 定时任务 通知需要同步环境的人
 def notify_sync_test_env_databases():
     # 获取需要通知的提测申请
-    need_sync_workflow = WorkFlow.objects.filter(status=Status.SYNC_ENV.value,
-                                                 is_sync=False)
+    need_sync_workflow = WorkFlow.objects.filter(status=Status.SYNC_ENV.value, is_sync=False)
 
     if need_sync_workflow:
         for workflow in list(need_sync_workflow):
@@ -295,5 +295,16 @@ def notify_sync_test_env_databases():
             status = {item.status for item in executes}
 
             if settings.SYNC_ENV.difference(sync_env) or status != {SqlExecuteStatus.SUCCESS.value}:
-                # TODO 是否发送邮件
-                print('通知测试同步环境')
+                # 发送邮件提醒
+                test_demand = workflow.test_demand
+                subject = f'【spug通知】{test_demand.demand_name}同步测试环境通知'
+                message = f'{test_demand.demand_name}还有脚本没有同步到测试环境，请前往同步'
+                file_names = None
+
+                recipient_list = workflow.notify_name.split(",")
+                record_item = {
+                    'status': Status.SYNC_ENV.value,
+                    'user': User.objects.filter(username='admin').first(),
+                    'demand': workflow.test_demand
+                }
+                Thread(target=send_email, args=(subject, message, recipient_list, file_names, record_item)).start()
