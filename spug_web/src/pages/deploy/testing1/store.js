@@ -75,7 +75,9 @@ class Store {
                     return x.status === 7 || x.status === 6;
                 })
             }else{
-                data = data.filter(x => x.status === this.f_status)
+                data = data.filter((x)=>{
+                    return x.status == this.f_status
+                })
             }
 
         }

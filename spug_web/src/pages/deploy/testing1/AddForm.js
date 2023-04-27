@@ -424,6 +424,12 @@ export default observer(function () {
                                                 label="Sql内容"
                                                 name={[field.name, 'sql_content']}
                                                 required
+                                                extra={
+                                                    <div style={{ "display":"flex","flexDirection": "column","color":"red"}}>
+                                                        <span>postgresql必须要指定schema</span>
+                                                        <span>如:update ghcloud.gh_traffic_event_rule.......</span>
+                                                    </div>
+                                                }
                                             >
                                                 <TextArea   onChange={SQLInspect}  disabled={store.formType === "look"} style={{marginLeft:"10px"}} rows={4} />
 
