@@ -468,7 +468,7 @@ class SyncView(View):
         # 校验sql哪些环境执行 和执行顺序
         workflow = WorkFlow.objects.filter(test_demand=form.id).first()
 
-        need_sync_workflow = WorkFlow.objects.filter(status=Status.COMPLETE_ONLINE.ONLINE.value, is_sync=0)
+        need_sync_workflow = WorkFlow.objects.filter(status=Status.SYNC_ENV.ONLINE.value, is_sync=0)
         for item in list(need_sync_workflow):
             # TODO 做测试 parse_time 特殊环境233的不需要校验
             if item.updated_at < workflow.updated_at:

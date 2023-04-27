@@ -182,6 +182,8 @@ class WorkFlowView(View):
             # 待上线更新sql执行状态
             work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
             work_flow.status = Status.UNDER_ONLINE.value
+        elif form.status == Status.COMPLETE_ONLINE.value:
+            work_flow.status = Status.SYNC_ENV.value
         else:
             work_flow.status = form.status
 
@@ -196,9 +198,9 @@ class WorkFlowView(View):
         work_flow.save()
 
         # 指定测试人员发送邮件通知
-        if work_flow.status in [Status.DELEGATE_TEST.value, Status.COMPLETE_ONLINE.value]:
+        if form.status in [Status.DELEGATE_TEST.value, Status.COMPLETE_ONLINE.value]:
             test_demand = TestDemand.objects.filter(pk=form.id).first()
-            if work_flow.status == Status.DELEGATE_TEST.value:
+            if form.status == Status.DELEGATE_TEST.value:
                 subject = f'【spug通知】{test_demand.demand_name}待测试'
                 message = f'{test_demand.demand_name}待测试'
                 file_names = None
@@ -209,7 +211,7 @@ class WorkFlowView(View):
 
             recipient_list = work_flow.notify_name.split(",")
             record_item = {
-                'status': work_flow.status,
+                'status': form.status,
                 'user': request.user,
                 'demand': test_demand
             }
@@ -283,7 +285,7 @@ def sync_deploy_request_status():
 # 定时任务 通知发布的人
 def notify_sync_test_env_databases():
     # 获取需要通知的提测申请
-    need_sync_workflow = WorkFlow.objects.filter(status=Status.COMPLETE_ONLINE.value,
+    need_sync_workflow = WorkFlow.objects.filter(status=Status.SYNC_ENV.value,
                                                  is_sync=False)
 
     if need_sync_workflow:

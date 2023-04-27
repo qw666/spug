@@ -23,6 +23,8 @@ class Status(Enum):
     ONLINE = 5
     # 上线完成
     COMPLETE_ONLINE = 6
+    # 同步环境
+    SYNC_ENV = 7
 
 
 # 提测申请sql执行状态枚举类
