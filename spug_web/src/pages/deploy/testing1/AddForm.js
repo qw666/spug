@@ -22,7 +22,6 @@ export default observer(function () {
     useEffect(() => {
         fetchProject();
         getSqlType();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     function getSqlType() {
         http.get('/api/gh/archery/instance?status='+"" ).then(res => {
