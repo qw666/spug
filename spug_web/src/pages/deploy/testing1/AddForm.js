@@ -22,8 +22,6 @@ export default observer(function () {
     useEffect(() => {
         fetchProject();
         getSqlType();
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     function getSqlType() {
         http.get('/api/gh/archery/instance?status='+"" ).then(res => {
@@ -249,7 +247,7 @@ export default observer(function () {
                     [
                         <Button
                             type="primary"
-                            key="cancel"
+                            key="sqljc"
                             onClick={handleInspct}
                         >
                             SQL检查
@@ -263,7 +261,7 @@ export default observer(function () {
                         </Button>,
                         <Button
                             type="primary"
-                            key="ok"
+                            key="reset"
                             onClick={handleReset}
                         >
                             重置

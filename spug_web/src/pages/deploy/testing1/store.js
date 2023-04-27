@@ -266,7 +266,6 @@ class Store {
         const counter = {'all': 0,"0":0,'1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0};
         for (let item of this.tableData) {
             counter['all'] += 1;
-            console.log("item['status']",item['status']);
             if ([6].includes(item['status']) || [7].includes(item['status'])) {
                 counter['6'] += 1
             }else{
