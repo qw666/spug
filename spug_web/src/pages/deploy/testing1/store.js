@@ -70,7 +70,15 @@ class Store {
             return date >= this.f_s_date && date <= this.f_e_date
         });
         if (this.f_status !== 'all') {
-            data = data.filter(x => x.status == this.f_status)
+            console.log(this.f_status);
+            if(this.f_status === "6"){
+                data = data.filter((x)=>{
+                    return x.status == 7 || x.status == 6;
+                })
+            }else{
+                data = data.filter(x => x.status == this.f_status)
+            }
+
         }
         return data
     }
@@ -259,7 +267,13 @@ class Store {
         const counter = {'all': 0,"0":0,'1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0};
         for (let item of this.tableData) {
             counter['all'] += 1;
-            counter[item['status']] += 1
+            console.log("item['status']",item['status']);
+            if ([6].includes(item['status']) || [7].includes(item['status'])) {
+                counter['6'] += 1
+            }else{
+                counter[item['status']] += 1
+            }
+
         }
         this.counter = counter
     };

@@ -86,6 +86,8 @@ function ComTable() {
                     return <Tag color="green">上线中</Tag>
                 case 6:
                     return <Tag color="green">上线完成</Tag>
+                case 7:
+                    return <Tag color="green">上线完成</Tag>
                 default:
                     return null;
             }
