@@ -1,9 +1,8 @@
-import React  ,{ useState, useEffect }from 'react';
+import React from 'react';
 import { observer } from 'mobx-react';
-import {Col, Divider, Form, Input, message, Modal, Row, Select, Table, Tag} from "antd";
+import {Col, Divider, Form, Input, message, Modal, Row, Select, Table} from "antd";
 import store from "./store";
 import { Action } from 'components';
-import S from "./index.module.less";
 import http from 'libs/http';
 const { TextArea } = Input;
 

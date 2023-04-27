@@ -12,17 +12,6 @@ import { Action, AuthButton, TableCard } from 'components';
 import S from './index.module.less';
 import store from './store';
 
-
-function DeployConfirm() {
-    return (
-        <div>
-            <div>确认发布方式</div>
-            <div style={{color: '#999', fontSize: 12}}>补偿：仅发布上次发布失败的主机。</div>
-            <div style={{color: '#999', fontSize: 12}}>全量：再次发布所有主机。</div>
-        </div>
-    )
-}
-
 function ComTable() {
     const columns = [{
         title: '需求名称',
@@ -103,49 +92,49 @@ function ComTable() {
         fixed: 'right',
         className: hasPermission('deploy.request.do|deploy.request.edit|deploy.request.approve|deploy.request.del') ? S.min180 : 'none',
         render: info => {
-            if(info.status == 0){
+            if(info.status === 0){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={(e) => store.appointDialog(info,"test")} >指定</Action.Button>
                     <Action.Button onClick={() => store.handleDelete(info)}>删除</Action.Button>
                 </Action>
-            }else if(info.status == 1){
+            }else if(info.status === 1){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={() => store.handleDelete(info)}>删除</Action.Button>
                 </Action>
-            }else if(info.status == 2 && (info.sql_exec_status == 0 || info.sql_exec_status == 3 )){
+            }else if(info.status === 2 && (info.sql_exec_status === 0 || info.sql_exec_status === 3 )){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={() => store.sqlExecuteWorkOrder(info,"cs")}>SQL测试执行</Action.Button>
                 </Action>
-            }else if(info.status == 2 && info.sql_exec_status == 2 ){
+            }else if(info.status === 2 && info.sql_exec_status === 2 ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={() => store.testsOk(info,"cs")}>测试完成</Action.Button>
                 </Action>
-            }else if(info.status == 3 && info.sql_exec_status == 2 ){
+            }else if(info.status === 3 && info.sql_exec_status === 2 ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={(e) => store.retest(e,info)}>重新测试</Action.Button>
                     <Action.Button  onClick={(e) => store.appointDialog(info,"goOnline")}>上线</Action.Button>
                 </Action>
-            }else if(info.status == 4 && (info.sql_exec_status == 4 || info.sql_exec_status == 7 )){
+            }else if(info.status === 4 && (info.sql_exec_status === 4 || info.sql_exec_status === 7 )){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={() => store.sqlExecuteWorkOrder(info,"xs")}>SQL线上执行</Action.Button>
                 </Action>
-            }else if(info.status == 5 && info.sql_exec_status == 6 ){
+            }else if(info.status === 5 && info.sql_exec_status === 6 ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button  onClick={(e) => store.ywgoOnline(e,info)}>运维上线申请</Action.Button>
                 </Action>
-            }else if(info.status == 6 && info.sql_exec_status == 6 ){
+            }else if(info.status === 6 && info.sql_exec_status === 6 ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={(e) => store.appointDialog(info,"beOnline")}>上线完成</Action.Button>
                 </Action>
-            }else if(info.status == 7 ){
+            }else if(info.status === 7 ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={(e) => store.synchronousEnv(info)}>同步测试环境</Action.Button>

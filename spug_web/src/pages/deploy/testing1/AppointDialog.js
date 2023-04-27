@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React  from 'react';
 import {observer} from "mobx-react";
 import store from "./store";
 import http from 'libs/http';
-import styles from './index.module.less';
 import {Form, Input, message, Modal, Select,} from "antd";
 export default observer(function () {
     const [form] = Form.useForm();
@@ -12,7 +11,7 @@ export default observer(function () {
 
         //测试
         if(store.appointType === "test"){
-            if(formData.tester_name == 0){
+            if(formData.tester_name === 0){
                 message.error('请指定测试人员');
                 return false
             }

@@ -2,18 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {observer} from "mobx-react";
 import store from "./store";
 import http from 'libs/http';
-import styles from './index.module.less';
-import {Form, Input, Modal, Row, Col, Select, Divider, Radio, Space, Cascader, Table, Popover, message} from "antd"
-import SQLTable from "./SQLTable";
+import {Form, Input, Modal, Row, Col, Select, Divider, Radio, Space, Cascader, message} from "antd"
 //引入antd组件内的组件的时候要放到最下边 要不有的报错 比如TextArea
 const { TextArea } = Input;
-const { Option } = Select;
 export default observer(function () {
     const [sqloptions, setsqlOptions] = useState([]);
     const [form] = Form.useForm();
     useEffect(() => {
         getSqlType();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     function getSqlType() {
@@ -56,8 +52,8 @@ export default observer(function () {
         if(databases){
             for (let i = 0; i < databases.length; i++) {
                 for (let j = 0; j < sqloptions.length; j++) {
-                    if(databases[i].databasesName.length == 2){
-                        if(databases[i].databasesName[0] == sqloptions[j].value){
+                    if(databases[i].databasesName.length === 2){
+                        if(databases[i].databasesName[0] === sqloptions[j].value){
                             databases[i].db_type = databases[i].databasesName[0];
                             databases[i].instance = sqloptions[j].id;
                             databases[i].db_name = databases[i].databasesName[1];

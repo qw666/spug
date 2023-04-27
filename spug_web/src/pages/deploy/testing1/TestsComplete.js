@@ -1,16 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {observer} from "mobx-react";
 import store from "./store";
 import http from 'libs/http';
-import styles from './index.module.less';
 import {Form, Input, Modal, Select, Space, Upload,message,Button} from "antd";
 import {UploadOutlined} from "@ant-design/icons";
 import { X_TOKEN } from 'libs';
 export default observer(function () {
-    const [par, setPar] = useState({
-        test_case :"",
-        test_report:"",
-    });
+
     const [uploadType, setUploadType] = useState({});
     const [fileListReport, setFileListReport] = useState({});
     const [fileListTestCase, setFileListTestCase] = useState({});

@@ -7,14 +7,9 @@ import styles from './index.module.less';
 import {Form, Input, Modal, Row, Col, Select, Button, Divider, Radio, Space, Cascader, message} from "antd";
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import SQLTable from "./SQLTable";
-import {toJS} from "mobx"
-import lds from "lodash";
-//引入antd组件内的组件的时候要放到最下边 要不有的报错 比如TextArea
 const { TextArea } = Input;
-const { Option } = Select;
 export default observer(function () {
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
     const [gcoptions, setgcOptions] = useState([]);
     const [sqloptions, setsqlOptions] = useState([]);
     const [errorCount, setErrorCount] = useState(-1);
@@ -120,8 +115,8 @@ export default observer(function () {
         if(projects){
             for (let i = 0; i < projects.length; i++) {
                  for (let j = 0; j < gcoptions.length; j++) {
-                     if(projects[i].projectsName.length == 2){
-                         if(projects[i].projectsName[0] == gcoptions[j].value){
+                     if(projects[i].projectsName.length === 2){
+                         if(projects[i].projectsName[0] === gcoptions[j].value){
                              projects[i].app_name = projects[i].projectsName[0];
                              projects[i].branch_name = projects[i].projectsName[1];
                              projects[i].deploy_id = gcoptions[j].deploy_id;
@@ -139,8 +134,8 @@ export default observer(function () {
         if(databases){
             for (let i = 0; i < databases.length; i++) {
                 for (let j = 0; j < sqloptions.length; j++) {
-                    if(databases[i].databasesName.length == 2){
-                        if(databases[i].databasesName[0] == sqloptions[j].value){
+                    if(databases[i].databasesName.length === 2){
+                        if(databases[i].databasesName[0] === sqloptions[j].value){
                             databases[i].db_type = databases[i].databasesName[0];
                             databases[i].instance = sqloptions[j].id;
                             databases[i].db_name = databases[i].databasesName[1];
@@ -159,7 +154,7 @@ export default observer(function () {
             return message.error('请SQL检查')
         }
         http.post('/api/gh/test/', formData).then((res)=>{
-            if(res == "success"){
+            if(res === "success"){
                 message.success('操作成功');
                 store.fetchRecords();
                 store.addVisible = false;
@@ -174,8 +169,8 @@ export default observer(function () {
         if(databases){
             for (let i = 0; i < databases.length; i++) {
                 for (let j = 0; j < sqloptions.length; j++) {
-                    if(databases[i].databasesName.length == 2){
-                        if(databases[i].databasesName[0] == sqloptions[j].value){
+                    if(databases[i].databasesName.length === 2){
+                        if(databases[i].databasesName[0] === sqloptions[j].value){
                             databases[i].db_type = databases[i].databasesName[0];
                             databases[i].instance = sqloptions[j].id;
                             databases[i].db_name = databases[i].databasesName[1];
@@ -191,7 +186,7 @@ export default observer(function () {
             return message.error('请添加数据库配置')
         }
 
-        let temp = [];
+
         http.post('/api/gh/archery/check',{
             databases:databases
         }).then((res)=>{
@@ -204,11 +199,6 @@ export default observer(function () {
             }
         })
 
-       /* this.SqlWarnTable = Object.values(toJS(temp))
-        this.SqlErrorTable = Object.values(toJS(temp))*/
-
-        //console.log(this.SqlErrorTable);
-        //this.error_count = 0;  //0的话可以提交表单 其余不可以提交
     }
     function handleReset() {
         form.resetFields();
@@ -240,7 +230,7 @@ export default observer(function () {
             maskClosable={false}
             title={store.formType === "add"?"新建申请":store.formType === "look"?"查看申请":""}
             onCancel={() => store.addVisible = false}
-            confirmLoading={loading}
+
             onOk={handleSubmit}
             footer={
                 store.formType === "add" ?
@@ -393,7 +383,7 @@ export default observer(function () {
                                     <Row  align="baseline">
 
                                         <Col span={22} >
-                                            {store.formType == "add"?<Form.Item
+                                            {store.formType === "add"?<Form.Item
                                                 labelCol={{span: 3}} wrapperCol={{span: 9}}
                                                 {...field}
                                                 label="Sql类型"

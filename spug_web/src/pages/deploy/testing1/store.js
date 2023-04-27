@@ -72,10 +72,10 @@ class Store {
         if (this.f_status !== 'all') {
             if(this.f_status === "6"){
                 data = data.filter((x)=>{
-                    return x.status == 7 || x.status == 6;
+                    return x.status === 7 || x.status === 6;
                 })
             }else{
-                data = data.filter(x => x.status == this.f_status)
+                data = data.filter(x => x.status === this.f_status)
             }
 
         }
@@ -148,8 +148,6 @@ class Store {
         store.SqlWarnTable = [];
         store.SqlErrorTable = [];
         this.addVisible = true;
-
-
     };
     //查看 和新建申请一个表单
     lookDialog = (e,info)=>{
