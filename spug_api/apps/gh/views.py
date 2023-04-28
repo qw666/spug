@@ -36,6 +36,12 @@ class TestView(View):
         if error is not None:
             return json_response(error=error)
 
+        # 增加校验
+        deploy_id_slist = [item.get('deploy_id') for item in form.projects]
+        deploy_id_set = {item.get('deploy_id') for item in form.projects}
+        if len(deploy_id_slist) != len(deploy_id_set):
+            return json_response(error="该提测申请中包含相同的工程信息，请重新确认工程信息！")
+
         form.notify_name = form.developer_name + ',' + form.tester_name
 
         with transaction.atomic():
@@ -68,6 +74,7 @@ class TestView(View):
                                                         db_name=item.get('db_name'),
                                                         group_id=item.get('group_id'),
                                                         sql_type=item.get('sql_type'),
+                                                        sql_exec_status=ExecuteStatus.TEST_WAITING.value,
                                                         sql_content=item.get('sql_content'),
                                                         created_by=request.user
                                                         )
@@ -191,8 +198,12 @@ class WorkFlowView(View):
             # 待上线更新sql执行状态
             if work_flow.sql_exec_status != ExecuteStatus.NO_NEED_EXECUTE.value:
                 work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
-            work_flow.status = Status.UNDER_ONLINE.value
+                work_flow.status = Status.ONLINE.value
+            else:
+                work_flow.status = Status.UNDER_ONLINE.value
         elif form.status == Status.COMPLETE_ONLINE.value:
+            if work_flow.sql_exec_status == ExecuteStatus.NO_NEED_EXECUTE.value:
+                work_flow.is_sync = True
             work_flow.status = Status.SYNC_ENV.value
         else:
             work_flow.status = form.status
@@ -241,10 +252,11 @@ class WorkFlowView(View):
 
         projects = DevelopProject.objects.filter(test_demand=form.id)
         del form.id
-
+        deploy_request_id_set = set()
         for item in list(projects):
             # 已经同步好的申请不再发布
             if item.deploy_request_id:
+                deploy_request_id_set.add(item.deploy_request_id)
                 continue
             deploy = Deploy.objects.get(pk=item.deploy_id)
             if not deploy:
@@ -271,6 +283,8 @@ class WorkFlowView(View):
             is_required_notify = deploy.is_audit
             if is_required_notify:
                 Thread(target=Helper.send_deploy_notify, args=(req, 'approve_req')).start()
+        if deploy_request_id_set:
+            return json_response(error='正在发布中，请勿重新发布！')
         return json_response(error=error)
 
 
@@ -278,7 +292,8 @@ class WorkFlowView(View):
 def sync_deploy_request_status():
     # 获取需要同步的状态
     need_sync_workflow = WorkFlow.objects.filter(status=Status.ONLINE.value,
-                                                 sql_exec_status=ExecuteStatus.PROD_FINISH.value)
+                                                 sql_exec_status__in=[ExecuteStatus.PROD_FINISH.value,
+                                                                      ExecuteStatus.NO_NEED_EXECUTE.value])
     if not need_sync_workflow:
         return
     for item in list(need_sync_workflow):
@@ -296,6 +311,8 @@ def sync_deploy_request_status():
 def notify_sync_test_env_databases():
     # 获取需要通知的提测申请
     need_sync_workflow = WorkFlow.objects.filter(status=Status.SYNC_ENV.value, is_sync=False)
+    if not need_sync_workflow:
+        return
 
     if need_sync_workflow:
         for workflow in list(need_sync_workflow):
