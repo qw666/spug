@@ -38,6 +38,7 @@ class WorkFlow(models.Model, ModelMixin):
     )
 
     SQL_EXEC_STATUS = (
+        (-1, '无需执行'),
         (0, '测试环境待执行'),
         (1, '测试环境执行中'),
         (2, '测试环境已执行'),
@@ -70,7 +71,7 @@ class WorkFlow(models.Model, ModelMixin):
     # 测试状态
     status = models.SmallIntegerField(choices=STATUS, default=0)
     # sql执行状态
-    sql_exec_status = models.SmallIntegerField(choices=SQL_EXEC_STATUS, default=0)
+    sql_exec_status = models.SmallIntegerField(choices=SQL_EXEC_STATUS, default=-1)
     # 更新人
     updated_by = models.ForeignKey(User, models.PROTECT, related_name='+')
     # 更新时间

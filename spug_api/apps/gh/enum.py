@@ -29,6 +29,8 @@ class Status(Enum):
 
 # 提测申请sql执行状态枚举类
 class ExecuteStatus(Enum):
+    # 无需执行
+    NO_NEED_EXECUTE = -1
     # 测试环境待执行
     TEST_WAITING = 0
     # 测试环境执行中
