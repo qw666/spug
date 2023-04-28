@@ -50,14 +50,14 @@ export default observer(function () {
         let isTrue = "";
         let FileExt = file.name.replace(/.+\./, "");
         //验证图片格式
-        if (["xls", "xlsx","docx"].indexOf(FileExt.toLowerCase()) === -1) {
+        if (["xls", "xlsx","doc","docx"].indexOf(FileExt.toLowerCase()) === -1) {
             isTrue = false;
         } else {
             isTrue = true;
         }
         console.log(isTrue);
         if (!isTrue) {
-            message.error("只能上传xls、xlsx格式的文件");
+            message.error("只能上传xls、xlsx、doc、docx");
             return
         }
 
