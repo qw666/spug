@@ -63,6 +63,7 @@ class TestView(View):
             if form.databases is not None:
                 WorkFlow.objects.create(test_demand=test_demand_id,
                                         developer_name=form.developer_name,
+                                        sql_exec_status=ExecuteStatus.TEST_WAITING.value,
                                         tester_name=form.tester_name,
                                         notify_name=form.notify_name,
                                         updated_by=request.user
@@ -74,7 +75,6 @@ class TestView(View):
                                                         db_name=item.get('db_name'),
                                                         group_id=item.get('group_id'),
                                                         sql_type=item.get('sql_type'),
-                                                        sql_exec_status=ExecuteStatus.TEST_WAITING.value,
                                                         sql_content=item.get('sql_content'),
                                                         created_by=request.user
                                                         )
