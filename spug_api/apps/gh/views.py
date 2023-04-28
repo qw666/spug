@@ -10,9 +10,9 @@ from apps.gh.app.app import fetch_versions
 from apps.gh.email.email import send_email
 from apps.gh.enum import Status, ExecuteStatus, SqlExecuteStatus
 from apps.gh.helper import Helper
-from apps.gh.models import TestDemand, WorkFlow, DevelopProject, DatabaseConfig, SqlExecute
+from apps.gh.models import TestDemand, WorkFlow, DevelopProject, DatabaseConfig
 from apps.repository.models import Repository
-from libs import json_response, JsonParser, Argument, auth, human_datetime
+from libs import json_response, JsonParser, Argument, human_datetime
 import json
 
 from spug import settings
@@ -75,8 +75,8 @@ class TestView(View):
                 DatabaseConfig.objects.bulk_create(batch_database_config)
 
         # 提交测试申请 发邮件
-        subject = f'【spug通知】{test_demand_id.demand_name}提测申请'
-        message = f'{test_demand_id.demand_name}提测申请，请前往指定测试人员'
+        subject = f'【spug通知】（{test_demand_id.demand_name}）提测申请'
+        message = f'（{test_demand_id.demand_name}）提测申请，请前往指定测试人员'
         recipient_list = work_flow.notify_name.split(",")
         file_names = None
         record_item = {
@@ -146,8 +146,8 @@ class TestView(View):
         work_flow.updated_at = human_datetime()
         work_flow.save()
 
-        subject = f'【spug通知】{test_demand.demand_name}测试完成通知'
-        message = f'{test_demand.demand_name}已经测试完成，请合代码部署到线上环境'
+        subject = f'【spug通知】（{test_demand.demand_name}）测试完成通知'
+        message = f'（{test_demand.demand_name}）已经测试完成，请合代码部署到线上环境'
         recipient_list = work_flow.notify_name.split(",")
         file_names = [test_demand.test_case, test_demand.test_report]
         record_item = {
@@ -202,12 +202,12 @@ class WorkFlowView(View):
         if form.status in [Status.DELEGATE_TEST.value, Status.COMPLETE_ONLINE.value]:
             test_demand = TestDemand.objects.filter(pk=form.id).first()
             if form.status == Status.DELEGATE_TEST.value:
-                subject = f'【spug通知】{test_demand.demand_name}待测试'
-                message = f'{test_demand.demand_name}待测试'
+                subject = f'【spug通知】（{test_demand.demand_name}）待测试'
+                message = f'（{test_demand.demand_name}）待测试'
                 file_names = None
             else:
-                subject = f'【spug通知】{test_demand.demand_name}上线通知'
-                message = f'{test_demand.demand_name}已经部署到线上环境，请验证'
+                subject = f'【spug通知】（{test_demand.demand_name}）上线通知'
+                message = f'（{test_demand.demand_name}）已经部署到线上环境，请验证'
                 file_names = None
 
             recipient_list = work_flow.notify_name.split(",")
@@ -297,8 +297,8 @@ def notify_sync_test_env_databases():
             if settings.SYNC_ENV.difference(sync_env) or status != {SqlExecuteStatus.SUCCESS.value}:
                 # 发送邮件提醒
                 test_demand = workflow.test_demand
-                subject = f'【spug通知】{test_demand.demand_name}同步测试环境通知'
-                message = f'{test_demand.demand_name}还有脚本没有同步到测试环境，请前往同步'
+                subject = f'【spug通知】（{test_demand.demand_name}）同步测试环境通知'
+                message = f'（{test_demand.demand_name}）还有脚本没有同步到测试环境，请前往同步'
                 file_names = None
 
                 recipient_list = workflow.notify_name.split(",")
