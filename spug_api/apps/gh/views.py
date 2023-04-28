@@ -198,9 +198,7 @@ class WorkFlowView(View):
             # 待上线更新sql执行状态
             if work_flow.sql_exec_status != ExecuteStatus.NO_NEED_EXECUTE.value:
                 work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
-                work_flow.status = Status.ONLINE.value
-            else:
-                work_flow.status = Status.UNDER_ONLINE.value
+            work_flow.status = Status.UNDER_ONLINE.value
         elif form.status == Status.COMPLETE_ONLINE.value:
             if work_flow.sql_exec_status == ExecuteStatus.NO_NEED_EXECUTE.value:
                 work_flow.is_sync = True

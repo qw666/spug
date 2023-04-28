@@ -130,6 +130,17 @@ def check_sql(request):
 
     if error is not None:
         return json_response(error=error)
+    if not form.databases:
+        return json_response(error='请填写数据库配置信息！')
+    for item in form.databases:
+        if item.get('instance') is None:
+            return json_response(error='数据库配置信息缺少数据库信息!')
+        if item.get('db_name') is None:
+            return json_response(error='数据库配置信息缺少数据库信息!')
+        if item.get('sql_type') is None:
+            return json_response(error='数据库配置信息缺少Sql类型!')
+        if item.get('sql_content') is None:
+            return json_response(error='数据库配置信息缺少Sql内容!')
 
     username = request.user.username
     response_token = get_auth_token(username)
