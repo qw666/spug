@@ -131,28 +131,32 @@ export default observer(function () {
         }
 
         let databases = formData.databases;
-        if(databases){
-            for (let i = 0; i < databases.length; i++) {
-                for (let j = 0; j < sqloptions.length; j++) {
-                    if(databases[i].databasesName.length === 2){
-                        if(databases[i].databasesName[0] === sqloptions[j].value){
-                            databases[i].db_type = databases[i].databasesName[0];
-                            databases[i].instance = sqloptions[j].id;
-                            databases[i].db_name = databases[i].databasesName[1];
-                            databases[i].group_id = sqloptions[j].resource_group[0];
+        if(databases.length>0){
+                for (let i = 0; i < databases.length; i++) {
+                    if(databases[i] !== undefined){
+                        for (let j = 0; j < sqloptions.length; j++) {
+                            if(databases[i].databasesName.length === 2){
+                                if(databases[i].databasesName[0] === sqloptions[j].value){
+                                    databases[i].db_type = databases[i].databasesName[0];
+                                    databases[i].instance = sqloptions[j].id;
+                                    databases[i].db_name = databases[i].databasesName[1];
+                                    databases[i].group_id = sqloptions[j].resource_group[0];
+                                }
+                            }else{
+                                return message.error('请选择正确的数据库类型/数据库名称')
+                            }
                         }
                     }else{
                         return message.error('请选择正确的数据库类型/数据库名称')
                     }
-
                 }
+
+            if(errorCount !== 0){
+                return message.error('请SQL检查')
             }
-        }else{
-            return message.error('请添加数据库配置')
         }
-        if(errorCount !== 0){
-            return message.error('请SQL检查')
-        }
+
+
         setLoading(true);
         http.post('/api/gh/test/', formData).then((res)=>{
             if(res === "success"){
@@ -160,29 +164,34 @@ export default observer(function () {
                 message.success('操作成功');
                 store.fetchRecords();
                 store.addVisible = false;
+            }else{
+                setLoading(false);
             }
-         })
+         }).finally(() => setLoading(false))
     }
     function handleInspct() {
         let formData = form.getFieldsValue();
 
         let databases = formData.databases;
-
         if(databases){
             for (let i = 0; i < databases.length; i++) {
-                for (let j = 0; j < sqloptions.length; j++) {
-                    if(databases[i].databasesName.length === 2){
-                        if(databases[i].databasesName[0] === sqloptions[j].value){
-                            databases[i].db_type = databases[i].databasesName[0];
-                            databases[i].instance = sqloptions[j].id;
-                            databases[i].db_name = databases[i].databasesName[1];
-                            databases[i].group_id = sqloptions[j].resource_group[0];
-                        }
-                    }else{
-                        return message.error('请选择正确的数据库类型/数据库名称')
-                    }
+                 if(databases[i]){
+                     for (let j = 0; j < sqloptions.length; j++) {
+                         if(databases[i].databasesName){
+                             if(databases[i].databasesName.length === 2){
+                                 if(databases[i].databasesName[0] === sqloptions[j].value){
+                                     databases[i].db_type = databases[i].databasesName[0];
+                                     databases[i].instance = sqloptions[j].id;
+                                     databases[i].db_name = databases[i].databasesName[1];
+                                     databases[i].group_id = sqloptions[j].resource_group[0];
+                                 }
+                             }else{
+                                 return message.error('请选择正确的数据库类型/数据库名称')
+                             }
+                         }
+                     }
+                 }
 
-                }
             }
         }else{
             return message.error('请添加数据库配置')
@@ -204,6 +213,8 @@ export default observer(function () {
     }
     function handleReset() {
         form.resetFields();
+        store.SqlWarnTable = [];
+        store.SqlErrorTable = [];
     }
     const filter = (inputValue, path) =>
         path.some((option) => option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
