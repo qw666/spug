@@ -108,12 +108,12 @@ function ComTable() {
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={() => store.sqlExecuteWorkOrder(info,"cs")}>SQL测试执行</Action.Button>
                 </Action>
-            }else if(info.status === 2 && info.sql_exec_status === 2 ){
+            }else if(info.status === 2 && (info.sql_exec_status === 2 || info.sql_exec_status === -1) ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={() => store.testsOk(info,"cs")}>测试完成</Action.Button>
                 </Action>
-            }else if(info.status === 3 && info.sql_exec_status === 2 ){
+            }else if(info.status === 3 && (info.sql_exec_status === 2 || info.sql_exec_status === -1)    ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={(e) => store.retest(e,info)}>重新测试</Action.Button>
@@ -124,17 +124,17 @@ function ComTable() {
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={() => store.sqlExecuteWorkOrder(info,"xs")}>SQL线上执行</Action.Button>
                 </Action>
-            }else if(info.status === 5 && info.sql_exec_status === 6 ){
+            }else if(info.status === 5 && (info.sql_exec_status === 6 || info.sql_exec_status === -1) ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button  onClick={(e) => store.ywgoOnline(e,info)}>运维上线申请</Action.Button>
                 </Action>
-            }else if(info.status === 6 && info.sql_exec_status === 6 ){
+            }else if(info.status === 6 && (info.sql_exec_status === 6 || info.sql_exec_status === -1) ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={(e) => store.appointDialog(info,"beOnline")}>上线完成</Action.Button>
                 </Action>
-            }else if(info.status === 7 ){
+            }else if(info.status === 7  && info.sql_exec_status !== -1 ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={(e) => store.synchronousEnv(info)}>同步测试环境</Action.Button>
