@@ -44,13 +44,6 @@ class TestView(View):
                                                        demand_link=form.demand_link,
                                                        created_by=request.user)
 
-            work_flow = WorkFlow.objects.create(test_demand=test_demand_id,
-                                                developer_name=form.developer_name,
-                                                tester_name=form.tester_name,
-                                                notify_name=form.notify_name,
-                                                updated_by=request.user
-                                                )
-
             batch_project_config = [DevelopProject(test_demand=test_demand_id,
                                                    deploy_id=item.get('deploy_id'),
                                                    app_name=item.get('app_name'),
@@ -62,6 +55,13 @@ class TestView(View):
             DevelopProject.objects.bulk_create(batch_project_config)
 
             if form.databases is not None:
+                WorkFlow.objects.create(test_demand=test_demand_id,
+                                        developer_name=form.developer_name,
+                                        tester_name=form.tester_name,
+                                        notify_name=form.notify_name,
+                                        updated_by=request.user
+                                        )
+
                 batch_database_config = [DatabaseConfig(test_demand=test_demand_id,
                                                         db_type=item.get('db_type'),
                                                         instance=item.get('instance'),
@@ -73,14 +73,22 @@ class TestView(View):
                                                         )
                                          for item in form.databases]
                 DatabaseConfig.objects.bulk_create(batch_database_config)
+            else:
+                WorkFlow.objects.create(test_demand=test_demand_id,
+                                        developer_name=form.developer_name,
+                                        tester_name=form.tester_name,
+                                        sql_exec_status=ExecuteStatus.NO_NEED_EXECUTE.value,
+                                        notify_name=form.notify_name,
+                                        updated_by=request.user
+                                        )
 
         # 提交测试申请 发邮件
         subject = f'【spug通知】{test_demand_id.demand_name}提测申请'
         message = f'{test_demand_id.demand_name}提测申请，请前往指定测试人员'
-        recipient_list = work_flow.notify_name.split(",")
+        recipient_list = form.notify_name.split(",")
         file_names = None
         record_item = {
-            'status': work_flow.status,
+            'status': Status.UNDER_TEST.value,
             'user': request.user,
             'demand': test_demand_id
         }
@@ -181,7 +189,8 @@ class WorkFlowView(View):
             work_flow.status = Status.TESTING.value
         elif form.status == Status.COMPLETE_TEST.value:
             # 待上线更新sql执行状态
-            work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
+            if work_flow.sql_exec_status != ExecuteStatus.NO_NEED_EXECUTE.value:
+                work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
             work_flow.status = Status.UNDER_ONLINE.value
         elif form.status == Status.COMPLETE_ONLINE.value:
             work_flow.status = Status.SYNC_ENV.value
