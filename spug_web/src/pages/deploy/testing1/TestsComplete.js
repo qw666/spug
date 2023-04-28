@@ -55,7 +55,7 @@ export default observer(function () {
         } else {
             isTrue = true;
         }
-
+        console.log(isTrue);
         if (!isTrue) {
             message.error("只能上传xls、xlsx格式的文件");
             return
@@ -113,7 +113,6 @@ export default observer(function () {
                 </Form.Item>
                 <Form.Item required name="name3" label="测试报告" >
                     <Upload
-                        action={"/api/gh/minio/fileupload/"}
                         beforeUpload={handleUpload1}
                         headers={{'X-Token': X_TOKEN}}
                         maxCount={1}
@@ -128,7 +127,6 @@ export default observer(function () {
                 <Form.Item required name="name3" label="测试用例" >
                     <Upload
                         maxCount={1}
-
                         beforeUpload={handleUpload1}
                         headers={{'X-Token': X_TOKEN}}
                     >

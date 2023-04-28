@@ -34,6 +34,8 @@ function ComTable() {
         key: 'sql_exec_status',
         render: info => {
             switch (info.sql_exec_status) {
+                case -1:
+                    return <Tag color="green">无需执行</Tag>
                 case 0:
                     return <Tag color="green">测试环境待执行</Tag>
                 case 1:
