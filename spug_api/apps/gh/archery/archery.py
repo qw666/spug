@@ -504,7 +504,6 @@ class SyncView(View):
 
         need_sync_workflow = WorkFlow.objects.filter(status=Status.SYNC_ENV.value, is_sync=0)
         for item in list(need_sync_workflow):
-            # TODO 做测试 parse_time
             if item.id != workflow.id and parse_time(item.updated_at) < parse_time(workflow.updated_at):
                 return json_response(error='请先同步' + item.test_demand.demand_name)
 
