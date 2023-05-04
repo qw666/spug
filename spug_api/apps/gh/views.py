@@ -224,8 +224,8 @@ class WorkFlowView(View):
                 message = f'（{test_demand.demand_name}）待测试'
                 file_names = None
             else:
-                subject = f'【spug通知】（{test_demand.demand_name}）上线通知'
-                message = f'（{test_demand.demand_name}）已经部署到线上环境，请验证'
+                subject = f'【spug通知】（{test_demand.demand_name}）上线完成通知'
+                message = f'（{test_demand.demand_name}）已在94环境测试完成，请验收，测试用例和测试报告见附件。'
                 file_names = None
 
             recipient_list = work_flow.notify_name.split(",")
@@ -304,8 +304,19 @@ def sync_deploy_request_status():
         if deploy_status_list and set(deploy_status_list) == {'3'}:
             item.status = Status.COMPLETE_ONLINE.value
             item.save()
-        # 通知测试 发送邮件
-        item.test_demand
+            # 通知测试 发送邮件
+            test_demand = item.test_demand
+            subject = f'【spug通知】（{test_demand.demand_name}）上线通知'
+            message = f'（{test_demand.demand_name}）已经部署到线上环境，请验证'
+            file_names = None
+
+            recipient_list = item.notify_name.split(",")
+            record_item = {
+                'status': item.status,
+                'user': User.objects.filter(username='admin').first(),
+                'demand': test_demand
+            }
+            Thread(target=send_email, args=(subject, message, recipient_list, file_names, record_item)).start()
 
 
 # 定时任务 通知需要同步环境的人
