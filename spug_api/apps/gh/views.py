@@ -228,7 +228,7 @@ class WorkFlowView(View):
             else:
                 subject = f'【spug通知】（{test_demand.demand_name}）上线完成通知'
                 message = f'（{test_demand.demand_name}）已在94环境测试完成，请验收，测试用例和测试报告见附件。'
-                file_names = None
+                file_names = [test_demand.test_case, test_demand.test_report]
 
             recipient_list = work_flow.notify_name.split(",")
             record_item = {
