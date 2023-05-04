@@ -288,21 +288,24 @@ class WorkFlowView(View):
 
 # 定时任务 获取发布状态
 def sync_deploy_request_status():
-    # 获取需要同步的状态
-    need_sync_workflow = WorkFlow.objects.filter(status=Status.ONLINE.value,
-                                                 sql_exec_status__in=[ExecuteStatus.PROD_FINISH.value,
-                                                                      ExecuteStatus.NO_NEED_EXECUTE.value])
+    # 获取需要同步的发布状态
+    need_sync_workflow = WorkFlow.objects.select_related("test_demand").filter(status=Status.ONLINE.value,
+                                                                               sql_exec_status__in=[
+                                                                                   ExecuteStatus.NO_NEED_EXECUTE.value,
+                                                                                   ExecuteStatus.PROD_FINISH.value,
+                                                                                   ExecuteStatus.NO_NEED_EXECUTE.value])
     if not need_sync_workflow:
         return
     for item in list(need_sync_workflow):
-        deploy_request_ids = list(DevelopProject.objects.filter(test_demand=item.test_demand_id)
-                                  .values_list("deploy_request_id", flat=True))
+        deploy_request_ids = list(item.test_demand.projects.values_list("deploy_request_id", flat=True))
 
         deploy_status_list = DeployRequest.objects.values_list('status', flat=True).filter(
             pk__in=deploy_request_ids)
         if deploy_status_list and set(deploy_status_list) == {'3'}:
             item.status = Status.COMPLETE_ONLINE.value
             item.save()
+        # 通知测试 发送邮件
+        item.test_demand
 
 
 # 定时任务 通知需要同步环境的人
