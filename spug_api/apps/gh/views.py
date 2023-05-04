@@ -113,8 +113,7 @@ class TestView(View):
             result = dict(temp, **work_flow)
             result['projects'] = list(item.projects.values('id', 'deploy_id', 'app_name', 'branch_name'))
             result['databases'] = list(
-                item.databases.values('id', 'db_type', 'db_name', 'group_id', 'instance', 'sql_type',
-                                      'sql_content'))
+                item.databases.values('id', 'db_type', 'db_name', 'group_id', 'instance', 'sql_type', 'sql_content'))
 
             test_demands.append(result)
         # 处理返回值
@@ -193,6 +192,11 @@ class WorkFlowView(View):
             return json_response(error='未找到指定对象')
 
         if form.status == Status.DELEGATE_TEST.value:
+            if form.tester_name:
+                work_flow.tester_name = form.tester_name
+                work_flow.notify_name = work_flow.developer_name + ',' + form.tester_name
+            else:
+                return json_response(error='请指定测试人员！')
             work_flow.status = Status.TESTING.value
         elif form.status == Status.COMPLETE_TEST.value:
             # 待上线更新sql执行状态
@@ -200,6 +204,10 @@ class WorkFlowView(View):
                 work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
             work_flow.status = Status.UNDER_ONLINE.value
         elif form.status == Status.COMPLETE_ONLINE.value:
+            if form.notify_name:
+                work_flow.notify_name = form.notify_name
+            else:
+                return json_response(error='请指定通知人员！')
             if work_flow.sql_exec_status == ExecuteStatus.NO_NEED_EXECUTE.value:
                 work_flow.is_sync = True
             work_flow.status = Status.SYNC_ENV.value
@@ -208,12 +216,6 @@ class WorkFlowView(View):
 
         work_flow.updated_by = request.user
         work_flow.updated_at = human_datetime()
-        if form.tester_name:
-            work_flow.tester_name = form.tester_name
-            work_flow.notify_name = work_flow.developer_name + ',' + form.tester_name
-        if form.notify_name:
-            work_flow.notify_name = form.notify_name
-
         work_flow.save()
 
         # 指定测试人员发送邮件通知
