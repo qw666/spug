@@ -133,6 +133,8 @@ def check_sql(request):
     if not form.databases:
         return json_response(error='请填写数据库配置信息！')
     for item in form.databases:
+        if item is None:
+            return json_response(error='请填写数据库配置信息！')
         if item.get('instance') is None:
             return json_response(error='数据库配置信息缺少数据库信息!')
         if item.get('db_name') is None:
