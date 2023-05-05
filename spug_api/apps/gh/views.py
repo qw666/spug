@@ -35,11 +35,17 @@ class TestView(View):
 
         if error is not None:
             return json_response(error=error)
-
         # 增加校验
-        deploy_id_slist = [item.get('deploy_id') for item in form.projects]
-        deploy_id_set = {item.get('deploy_id') for item in form.projects}
-        if len(deploy_id_slist) != len(deploy_id_set):
+        deploy_id_set = set()
+        deploy_id_list = list()
+        if not form.projects:
+            return json_response(error='请选择工程信息')
+        for item in form.projects:
+            if item is None:
+                return json_response(error='请选择工程信息')
+            deploy_id_list.append(item.get('deploy_id'))
+            deploy_id_set.add(item.get('deploy_id'))
+        if len(deploy_id_list) != len(deploy_id_set):
             return json_response(error="该提测申请中包含相同的工程信息，请重新确认工程信息！")
 
         form.notify_name = form.developer_name + ',' + form.tester_name
@@ -60,7 +66,7 @@ class TestView(View):
 
             DevelopProject.objects.bulk_create(batch_project_config)
 
-            if form.databases is not None:
+            if form.databases:
                 WorkFlow.objects.create(test_demand=test_demand_id,
                                         developer_name=form.developer_name,
                                         sql_exec_status=ExecuteStatus.TEST_WAITING.value,
@@ -176,7 +182,7 @@ class TestView(View):
 class WorkFlowView(View):
 
     # 指定测试/重新测试/上线/上线完成
-    # status 是当前工单的执行状态 指定测试为1 重新测试为2 上线为3  上线完成为6
+    # status 是当前工单的执行状态 指定测试为1 重新测试为2 上线为3  线上验收为6
     def patch(self, request):
         form, error = JsonParser(
             Argument('id', type=int, help='参数id不能为空'),
@@ -202,7 +208,9 @@ class WorkFlowView(View):
             # 待上线更新sql执行状态
             if work_flow.sql_exec_status != ExecuteStatus.NO_NEED_EXECUTE.value:
                 work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
-            work_flow.status = Status.UNDER_ONLINE.value
+                work_flow.status = Status.UNDER_ONLINE.value
+            else:
+                work_flow.status = Status.ONLINE.value
         elif form.status == Status.COMPLETE_ONLINE.value:
             if form.notify_name:
                 work_flow.notify_name = form.notify_name
@@ -226,7 +234,7 @@ class WorkFlowView(View):
                 message = f'（{test_demand.demand_name}）待测试'
                 file_names = None
             else:
-                subject = f'【spug通知】（{test_demand.demand_name}）上线完成通知'
+                subject = f'【spug通知】（{test_demand.demand_name}）线上验收通知'
                 message = f'（{test_demand.demand_name}）已在94环境测试完成，请验收，测试用例和测试报告见附件。'
                 file_names = [test_demand.test_case, test_demand.test_report]
 
@@ -271,10 +279,10 @@ class WorkFlowView(View):
             form.spug_version = Repository.make_spug_version(item.deploy_id)
             # 获取最新发布版本
             branches, tags = fetch_versions(deploy)
-            version = branches[item.branch_name][0]['id']
-            form.version = f'{item.branch_name}#{version[:6]}'
+            version = branches['master'][0]['id']
+            form.version = f'master#{version[:6]}'
 
-            form.extra = json.dumps(['branch', item.branch_name, version])
+            form.extra = json.dumps(['branch', 'master', version])
 
             req = DeployRequest.objects.create(created_by=request.user, **form)
             item.deploy_request_id = req.id
