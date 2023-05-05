@@ -134,7 +134,7 @@ function ComTable() {
             }else if(info.status === 6 && (info.sql_exec_status === 6 || info.sql_exec_status === -1) ){
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
-                    <Action.Button onClick={(e) => store.appointDialog(info,"beOnline")}>上线完成</Action.Button>
+                    <Action.Button onClick={(e) => store.appointDialog(info,"beOnline")}>线上验收</Action.Button>
                 </Action>
             }else if(info.status === 7  && info.sql_exec_status !== -1 ){
                 return  <Action>
