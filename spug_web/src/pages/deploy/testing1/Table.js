@@ -37,21 +37,21 @@ function ComTable() {
                 case -1:
                     return <Tag color="green">无需执行</Tag>
                 case 0:
-                    return <Tag color="green">测试环境待执行</Tag>
+                    return <Tag color="blue">测试环境待执行</Tag>
                 case 1:
-                    return <Tag color="green">测试环境执行中</Tag>
+                    return <Tag color="orange">测试环境执行中</Tag>
                 case 2:
                     return <Tag color="green">测试环境已执行</Tag>
                 case 3:
-                    return <Tag color="green">测试环境执行失败</Tag>
+                    return <Tag color="red">测试环境执行失败</Tag>
                 case 4:
-                    return <Tag color="green">线上环境待执行</Tag>
+                    return <Tag color="blue">线上环境待执行</Tag>
                 case 5:
-                    return <Tag color="green">线上环境执行中</Tag>
+                    return <Tag color="orange">线上环境执行中</Tag>
                 case 6:
                     return <Tag color="green">线上环境已执行</Tag>
                 case 7:
-                    return <Tag color="green">线上环境执行失败</Tag>
+                    return <Tag color="red">线上环境执行失败</Tag>
                 default:
                     return null;
             }
@@ -64,17 +64,17 @@ function ComTable() {
         render: info => {
             switch (info.status) {
                 case 0:
-                    return <Tag color="green">待测试</Tag>
+                    return <Tag color="blue">待测试</Tag>
                 case 1:
-                    return <Tag color="green">指定测试</Tag>
+                    return <Tag color="purple">指定测试</Tag>
                 case 2:
-                    return <Tag color="green">测试中</Tag>
+                    return <Tag color="orange">测试中</Tag>
                 case 3:
                     return <Tag color="green">测试完成</Tag>
                 case 4:
-                    return <Tag color="green">待上线</Tag>
+                    return <Tag color="blue">待上线</Tag>
                 case 5:
-                    return <Tag color="green">上线中</Tag>
+                    return <Tag color="orange">上线中</Tag>
                 case 6:
                     return <Tag color="green">上线完成</Tag>
                 case 7:
