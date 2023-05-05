@@ -114,17 +114,20 @@ export default observer(function () {
         let projects = formData.projects;
         if(projects){
             for (let i = 0; i < projects.length; i++) {
-                 for (let j = 0; j < gcoptions.length; j++) {
-                     if(projects[i].projectsName.length === 2){
-                         if(projects[i].projectsName[0] === gcoptions[j].value){
-                             projects[i].app_name = projects[i].projectsName[0];
-                             projects[i].branch_name = projects[i].projectsName[1];
-                             projects[i].deploy_id = gcoptions[j].deploy_id;
-                         }
-                     }else{
-                         return message.error('请选择正确的工程信息/分支信息')
-                     }
-                 }
+                if(projects[i] !== undefined){
+                    for (let j = 0; j < gcoptions.length; j++) {
+                        if(projects[i].projectsName.length === 2){
+                            if(projects[i].projectsName[0] === gcoptions[j].value){
+                                projects[i].app_name = projects[i].projectsName[0];
+                                projects[i].branch_name = projects[i].projectsName[1];
+                                projects[i].deploy_id = gcoptions[j].deploy_id;
+                            }
+                        }else{
+                            return message.error('请选择正确的工程信息/分支信息')
+                        }
+                    }
+                }
+
              }
          }else{
             return message.error('请添加工程信息')
