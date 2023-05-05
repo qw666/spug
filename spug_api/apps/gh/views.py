@@ -113,8 +113,7 @@ class TestView(View):
             result = dict(temp, **work_flow)
             result['projects'] = list(item.projects.values('id', 'deploy_id', 'app_name', 'branch_name'))
             result['databases'] = list(
-                item.databases.values('id', 'db_type', 'db_name', 'group_id', 'instance', 'sql_type',
-                                      'sql_content'))
+                item.databases.values('id', 'db_type', 'db_name', 'group_id', 'instance', 'sql_type', 'sql_content'))
 
             test_demands.append(result)
         # 处理返回值
@@ -193,15 +192,22 @@ class WorkFlowView(View):
             return json_response(error='未找到指定对象')
 
         if form.status == Status.DELEGATE_TEST.value:
+            if form.tester_name:
+                work_flow.tester_name = form.tester_name
+                work_flow.notify_name = work_flow.developer_name + ',' + form.tester_name
+            else:
+                return json_response(error='请指定测试人员！')
             work_flow.status = Status.TESTING.value
         elif form.status == Status.COMPLETE_TEST.value:
             # 待上线更新sql执行状态
             if work_flow.sql_exec_status != ExecuteStatus.NO_NEED_EXECUTE.value:
                 work_flow.sql_exec_status = ExecuteStatus.PROD_WAITING.value
-                work_flow.status = Status.ONLINE.value
-            else:
-                work_flow.status = Status.UNDER_ONLINE.value
+            work_flow.status = Status.UNDER_ONLINE.value
         elif form.status == Status.COMPLETE_ONLINE.value:
+            if form.notify_name:
+                work_flow.notify_name = form.notify_name
+            else:
+                return json_response(error='请指定通知人员！')
             if work_flow.sql_exec_status == ExecuteStatus.NO_NEED_EXECUTE.value:
                 work_flow.is_sync = True
             work_flow.status = Status.SYNC_ENV.value
@@ -210,12 +216,6 @@ class WorkFlowView(View):
 
         work_flow.updated_by = request.user
         work_flow.updated_at = human_datetime()
-        if form.tester_name:
-            work_flow.tester_name = form.tester_name
-            work_flow.notify_name = work_flow.developer_name + ',' + form.tester_name
-        if form.notify_name:
-            work_flow.notify_name = form.notify_name
-
         work_flow.save()
 
         # 指定测试人员发送邮件通知
@@ -226,9 +226,9 @@ class WorkFlowView(View):
                 message = f'（{test_demand.demand_name}）待测试'
                 file_names = None
             else:
-                subject = f'【spug通知】（{test_demand.demand_name}）上线通知'
-                message = f'（{test_demand.demand_name}）已经部署到线上环境，请验证'
-                file_names = None
+                subject = f'【spug通知】（{test_demand.demand_name}）上线完成通知'
+                message = f'（{test_demand.demand_name}）已在94环境测试完成，请验收，测试用例和测试报告见附件。'
+                file_names = [test_demand.test_case, test_demand.test_report]
 
             recipient_list = work_flow.notify_name.split(",")
             record_item = {
@@ -290,21 +290,35 @@ class WorkFlowView(View):
 
 # 定时任务 获取发布状态
 def sync_deploy_request_status():
-    # 获取需要同步的状态
-    need_sync_workflow = WorkFlow.objects.filter(status=Status.ONLINE.value,
-                                                 sql_exec_status__in=[ExecuteStatus.PROD_FINISH.value,
-                                                                      ExecuteStatus.NO_NEED_EXECUTE.value])
+    # 获取需要同步的发布状态
+    need_sync_workflow = WorkFlow.objects.select_related("test_demand").filter(status=Status.ONLINE.value,
+                                                                               sql_exec_status__in=[
+                                                                                   ExecuteStatus.NO_NEED_EXECUTE.value,
+                                                                                   ExecuteStatus.PROD_FINISH.value,
+                                                                                   ExecuteStatus.NO_NEED_EXECUTE.value])
     if not need_sync_workflow:
         return
     for item in list(need_sync_workflow):
-        deploy_request_ids = list(DevelopProject.objects.filter(test_demand=item.test_demand_id)
-                                  .values_list("deploy_request_id", flat=True))
+        deploy_request_ids = list(item.test_demand.projects.values_list("deploy_request_id", flat=True))
 
         deploy_status_list = DeployRequest.objects.values_list('status', flat=True).filter(
             pk__in=deploy_request_ids)
         if deploy_status_list and set(deploy_status_list) == {'3'}:
             item.status = Status.COMPLETE_ONLINE.value
             item.save()
+            # 通知测试 发送邮件
+            test_demand = item.test_demand
+            subject = f'【spug通知】（{test_demand.demand_name}）上线通知'
+            message = f'（{test_demand.demand_name}）已经部署到线上环境，请验证'
+            file_names = None
+
+            recipient_list = item.notify_name.split(",")
+            record_item = {
+                'status': item.status,
+                'user': User.objects.filter(username='admin').first(),
+                'demand': test_demand
+            }
+            Thread(target=send_email, args=(subject, message, recipient_list, file_names, record_item)).start()
 
 
 # 定时任务 通知需要同步环境的人
