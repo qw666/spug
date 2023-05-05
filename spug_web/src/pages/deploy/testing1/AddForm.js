@@ -219,12 +219,15 @@ export default observer(function () {
     const filter = (inputValue, path) =>
         path.some((option) => option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
     const downloadFile = (val)=>{
-        http.get('/api/gh/minio/download/',{
-            params: {
+        http({
+            method: 'get',
+            url:'/api/gh/minio/download/',
+            params:{
                 file_name:val
-            }
-        }).then((res)=>{
-            const blob = new Blob([res])// application/vnd.openxmlformats-officedocument.spreadsheetml.sheet这里表示xlsx类型
+            },
+            responseType:"blob"
+        }).then(res=>{
+            const blob = new Blob([res.data])// application/vnd.openxmlformats-officedocument.spreadsheetml.sheet这里表示xlsx类型
             const downloadElement = document.createElement('a')
             const href = window.URL.createObjectURL(blob) // 创建下载的链接
             downloadElement.href = href
@@ -235,6 +238,7 @@ export default observer(function () {
             document.body.removeChild(downloadElement) // 下载完成移除元素
             window.URL.revokeObjectURL(href) // 释放掉blob对象
         })
+
     }
     return (
         <Modal
