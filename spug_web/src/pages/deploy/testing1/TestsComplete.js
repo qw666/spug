@@ -55,7 +55,6 @@ export default observer(function () {
         } else {
             isTrue = true;
         }
-        console.log(isTrue);
         if (!isTrue) {
             message.error("只能上传xls、xlsx、doc、docx");
             return

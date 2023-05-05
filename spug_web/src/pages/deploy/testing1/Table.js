@@ -119,7 +119,7 @@ function ComTable() {
                 return  <Action>
                     <Action.Button onClick={(e) => store.lookDialog(e,info)} >查看</Action.Button>
                     <Action.Button onClick={(e) => store.retest(e,info)}>重新测试</Action.Button>
-                    <Action.Button  onClick={(e) => store.appointDialog(info,"goOnline")}>上线</Action.Button>
+                    <Action.Button  onClick={(e) => store.goOnline(info)}>上线</Action.Button>
                 </Action>
             }else if(info.status === 4 && (info.sql_exec_status === 4 || info.sql_exec_status === 7 )){
                 return  <Action>

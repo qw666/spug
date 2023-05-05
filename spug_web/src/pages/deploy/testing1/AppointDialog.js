@@ -27,7 +27,7 @@ export default observer(function () {
             })
         }
         //上线
-        if(store.appointType === "goOnline"){
+     /*   if(store.appointType === "goOnline"){
             if(formData.notify_name  === undefined){
                 message.error('请指定通知人员');
                 return false
@@ -42,7 +42,7 @@ export default observer(function () {
                 store.fetchRecords();
                 store.appointVisible = false;
             })
-        }
+        }*/
         //上线完成
         if(store.appointType === "beOnline"){
             if(formData.notify_name  === undefined){
