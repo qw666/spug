@@ -39,11 +39,6 @@ def send_email(subject, message, recipient_list, record_item, file_names=None, h
         reply_to=[settings.EMAIL_HOST_USER],
     )
 
-    # table_html = os.path.dirname(os.path.abspath(__file__)) + '\\table.html'
-    # table_html_str = open(table_html, 'rb').read()
-    # content_html = MIMEText(table_html_str, "html", "utf-8")
-    # email.attach(content_html)
-
     try:
         recipient_list = list(UserExtend.objects.values_list('email', flat=True).filter(nickname__in=recipient_list))
         email.to = recipient_list
@@ -54,8 +49,8 @@ def send_email(subject, message, recipient_list, record_item, file_names=None, h
         if html_names:
             for html_name in html_names:
                 html_data = MINIO_CLIENT.get_object(MINIO_STORAGE_BUCKET_NAME, html_name)
-                html = html_data.read()
-                email.attach(MIMEText(html, "html", "utf-8"))
+                email.content_subtype = 'html'
+                email.attach(MIMEText(html_data.read(), "html", "utf-8"))
         email.send()
         # 更新到发送记录表
         if record_item:
