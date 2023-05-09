@@ -1,9 +1,10 @@
+import os
 from datetime import datetime
 
 from django.http import HttpResponseBadRequest, HttpResponse
 
 from apps.gh.minio.utils import MINIO_CLIENT
-from libs import json_response
+from libs import json_response, JsonParser, Argument
 from spug.overrides import MINIO_STORAGE_BUCKET_NAME
 
 bucket_name = MINIO_STORAGE_BUCKET_NAME
@@ -33,3 +34,24 @@ def download_file(request):
         response = HttpResponse(file_content, content_type='application/octet-stream')
         response['Content-Disposition'] = f'attachment; filename={file_name}'.encode()
         return response
+
+
+# minio上传测试报告
+def upload_html(request):
+    form, error = JsonParser(
+        Argument('report_html', type=str, help='参数html字符串不能为空')
+    ).parse(request.body)
+
+    if error is not None:
+        return json_response(error=error)
+    html_name: str = datetime.now().strftime("%Y%m%d%H%M%S%f")
+    with open(html_name, 'w', encoding='UTF-8', ) as f:
+        f.write(form.report_html)
+    if not MINIO_CLIENT.bucket_exists(bucket_name):
+        MINIO_CLIENT.make_bucket(bucket_name)
+
+    table_html = os.path.dirname(os.path.abspath(__file__)) + '\\' + html_name
+    file = open(table_html, 'rb').read()
+
+    MINIO_CLIENT.put_object(bucket_name, html_name, file, length=file.size)
+    return json_response(html_name)

@@ -5,4 +5,5 @@ from apps.gh.minio.minio import *
 urlpatterns = [
     path('fileupload/', upload_file),
     path('download/', download_file),
+    path('htmlupload/', upload_html),
 ]

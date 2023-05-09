@@ -1,4 +1,5 @@
 import json
+from email.mime.text import MIMEText
 
 import requests
 from django.core.mail import EmailMessage
@@ -26,17 +27,22 @@ def send_email_req(request):
             'user': request.user,
             'demand': TestDemand.objects.filter(pk=2).first()
         }
-        return send_email(subject, message, recipient_list, file_names, record_item)
+        return send_email(subject, message, recipient_list, record_item, file_names)
 
 
 # 供内部调用
-def send_email(subject, message, recipient_list, file_names, record_item):
+def send_email(subject, message, recipient_list, record_item, file_names=None, html_names=None):
     email = EmailMessage(
         subject=subject,
         body=message,
         from_email=settings.EMAIL_HOST_USER,
         reply_to=[settings.EMAIL_HOST_USER],
     )
+
+    # table_html = os.path.dirname(os.path.abspath(__file__)) + '\\table.html'
+    # table_html_str = open(table_html, 'rb').read()
+    # content_html = MIMEText(table_html_str, "html", "utf-8")
+    # email.attach(content_html)
 
     try:
         recipient_list = list(UserExtend.objects.values_list('email', flat=True).filter(nickname__in=recipient_list))
@@ -45,6 +51,11 @@ def send_email(subject, message, recipient_list, file_names, record_item):
             for file_name in file_names:
                 file_data = MINIO_CLIENT.get_object(MINIO_STORAGE_BUCKET_NAME, file_name)
                 email.attach(file_name, file_data.read(), 'application/octet-stream')
+        if html_names:
+            for html_name in html_names:
+                html_data = MINIO_CLIENT.get_object(MINIO_STORAGE_BUCKET_NAME, html_name)
+                html = html_data.read()
+                email.attach(MIMEText(html, "html", "utf-8"))
         email.send()
         # 更新到发送记录表
         if record_item:
@@ -76,6 +87,7 @@ def send_email(subject, message, recipient_list, file_names, record_item):
             )
         return json_response(error=e)
 
+
 # 应用发布发邮件方法
 def send_email_message(subject, message, recipient_list):
     email = EmailMessage(
@@ -86,6 +98,7 @@ def send_email_message(subject, message, recipient_list):
     )
     email.to = list(UserExtend.objects.values_list('email', flat=True).filter(nickname__in=recipient_list))
     email.send()
+
 
 # 应用发布webhook调用
 def send_deploy_email(request):
@@ -112,7 +125,8 @@ def send_deploy_email(request):
     ]
 
     if action == 'approve_req':
-        notifiers = list(User.objects.values_list('nickname', flat=True).filter(roles__name__contains='管理').distinct())
+        notifiers = list(
+            User.objects.values_list('nickname', flat=True).filter(roles__name__contains='管理').distinct())
         # notifiers = ['高银肖']
         title = '【spug通知】发布审核申请通知'
         texts.insert(0, '## %s' % '发布审核申请')
