@@ -400,6 +400,7 @@ def build_html_picture(form):
     plt.figure(figsize=(12, 5), dpi=100)
     # 解决中文乱码
     plt.rcParams['font.family'] = 'SimHei'
+    plt.rcParams['axes.unicode_minus'] = False
     total_bug_no = form.fatal_no + form.serious_no + form.general_no + form.prompt_no
     bar_data = [form.test_case_no, form.exec_case_no, total_bug_no]
     bar_colors = ['r', 'g', 'b']
