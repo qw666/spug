@@ -17,6 +17,9 @@ export default observer(function () {
     const [generateHtml, setGenerateHtml] = useState("");
     //是否已经生成测试报告 生成才能点提交按钮
     const [isGenerate, setIsGenerate] = useState(false);
+    const uploadRemove = ()=>{
+        setFileListTestCase({});
+    };
     //生成测试报告
     const handleGenerate = ()=>{
         let formData = form.getFieldsValue();
@@ -224,6 +227,7 @@ export default observer(function () {
                         <Form.Item required  label="测试用例" >
                             <Upload
                                 maxCount={1}
+                                onRemove={uploadRemove}
                                 beforeUpload={handleUpload1}
                                 headers={{'X-Token': X_TOKEN}}
                             >
