@@ -175,8 +175,7 @@ class TestView(View):
         message = f'（{test_demand.demand_name}）已经测试完成，请合代码部署到线上环境'
         recipient_list = work_flow.notify_name.split(",")
         file_names = [test_demand.test_case]
-        # html_names = [test_demand.test_report]
-        html_names = ['20230509091955322626table.html']
+        html_names = [test_demand.test_report]
         record_item = {
             'status': work_flow.status,
             'user': request.user,
@@ -245,7 +244,7 @@ class WorkFlowView(View):
             else:
                 subject = f'【spug通知】（{test_demand.demand_name}）线上验收通知'
                 message = f'（{test_demand.demand_name}）已在94环境测试完成，请验收，测试用例和测试报告见附件。'
-                file_names = [test_demand.test_case, test_demand.test_report]
+                file_names = [test_demand.test_case]
                 html_names = [test_demand.test_report]
 
             recipient_list = work_flow.notify_name.split(",")
@@ -397,7 +396,7 @@ class TestReportView(View):
         return json_response(data=html)
 
 
-def build_html_picture(self, form):
+def build_html_picture(form):
     plt.figure(figsize=(12, 5), dpi=100)
     # 解决中文乱码
     plt.rcParams['font.family'] = 'SimHei'
@@ -405,7 +404,10 @@ def build_html_picture(self, form):
     bar_data = [form.test_case_no, form.exec_case_no, total_bug_no]
     bar_colors = ['r', 'g', 'b']
     bar_labels = ['测试用例数', '执行用例数', 'bug数']
-    ax_bar = plt.subplot(121)
+    if total_bug_no:
+        ax_bar = plt.subplot(121)
+    else:
+        ax_bar = plt.subplot()
     # 通过plt.bar()函数生成bar chart
     bar = plt.bar(range(len(bar_data)), bar_data, alpha=0.5,
                   color=bar_colors, tick_label=bar_labels, align='center')
@@ -438,7 +440,8 @@ def build_html_picture(self, form):
             pie_labels.append("提示")
             pie_colors.append('gold')
 
-        plt.subplot(122)
+        ax_pie = plt.subplot(122)
+        ax_pie.set_title(label="BUG等级分布", fontsize=14, y=0.94)
         pie_wedges, pie_text, pie_autotext = plt.pie(pie_data, autopct='%1.2f%%', labels=pie_labels,
                                                      colors=pie_colors, labeldistance=1.1)
         plt.legend(pie_wedges, pie_labels, loc="center", bbox_to_anchor=(1, 0, 0, 0))
@@ -449,18 +452,18 @@ def build_html_picture(self, form):
     # 将图片转为base64的字符串
     png2base64_str = str(base64.b64encode(pie_file.getvalue()), "utf-8")
     html_picture = '''
-                <div>
                     <div>
-                        <span>&nbsp;</span>
-                        <span style=\"text-align:center;width: 1200px;font-size:20px;font-weight: bold;display:block;\">测试报告分析</span>
-                        <img src=\"data:image/png;base64,{}\"/>
+                        <div>
+                            <span>&nbsp;</span>
+                            <span style=\"text-align:center;width: 1200px;font-size:20px;font-weight: bold;display:block;\">测试报告分析</span>
+                            <img src=\"data:image/png;base64,{}\"/>
+                        </div>
                     </div>
-                </div>
-            '''.format(png2base64_str)
+                '''.format(png2base64_str)
     return html_picture
 
 
-def build_html_table(self, form):
+def build_html_table(form):
     test_demand = TestDemand.objects.filter(pk=form.id).first()
     table = HTMLTable()
     table.append_header_rows((
@@ -469,7 +472,7 @@ def build_html_table(self, form):
     table.append_data_rows((
         ('测试需求名称', test_demand.demand_name, '测试需求链接', test_demand.demand_link),
         ('开发人员', test_demand.workflow.developer_name, '测试人员', test_demand.workflow.tester_name),
-        ('测试环境', form.test_env, '测试周期', form.start_time + '_' + form.end_time),
+        ('测试环境', form.test_env, '测试周期', form.start_time + '至' + form.end_time),
         ('测试用例数', form.test_case_no, '执行用例数', form.exec_case_no),
         ('BUG统计', '', '', ''),
         ('致命', '严重', '一般', '提示'),

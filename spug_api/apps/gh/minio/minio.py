@@ -1,4 +1,6 @@
-import os
+import io
+import logging
+
 from datetime import datetime
 
 from django.http import HttpResponseBadRequest, HttpResponse
@@ -44,14 +46,19 @@ def upload_html(request):
 
     if error is not None:
         return json_response(error=error)
-    html_name: str = datetime.now().strftime("%Y%m%d%H%M%S%f")
-    with open(html_name, 'w', encoding='UTF-8', ) as f:
-        f.write(form.report_html)
-    if not MINIO_CLIENT.bucket_exists(bucket_name):
-        MINIO_CLIENT.make_bucket(bucket_name)
 
-    table_html = os.path.dirname(os.path.abspath(__file__)) + '\\' + html_name
-    file = open(table_html, 'rb').read()
+    prefix: str = datetime.now().strftime("%Y%m%d%H%M%S%f")
+    html_name = prefix + '.html'
 
-    MINIO_CLIENT.put_object(bucket_name, html_name, file, length=file.size)
-    return json_response(html_name)
+    try:
+        if not MINIO_CLIENT.bucket_exists(bucket_name):
+            MINIO_CLIENT.make_bucket(bucket_name)
+        report_html_as_bytes = form.report_html.encode('utf-8')
+        report_html_as_a_stream = io.BytesIO(report_html_as_bytes)
+
+        MINIO_CLIENT.put_object(bucket_name, html_name, report_html_as_a_stream, length=len(report_html_as_bytes))
+
+        return json_response(html_name)
+    except Exception as e:
+        logging.error(e)
+        return HttpResponseBadRequest
