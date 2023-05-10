@@ -280,7 +280,7 @@ export default observer(function () {
                 <Row>
                     <Col span={24}>
                         <Form.Item labelCol={{span: 3}} wrapperCol={{span: 20}}
-                                    name="recommend" label="测试建议" >
+                                   required name="recommend" label="测试建议" >
                             <Input   onChange={e => setIsGenerate(false)}     />
                         </Form.Item>
                     </Col>
@@ -288,7 +288,7 @@ export default observer(function () {
                 <Row>
                     <Col span={24}>
                         <Form.Item labelCol={{span: 3}} wrapperCol={{span: 20}}
-                                    name="conclusion" label="测试结论" >
+                                   required  name="conclusion" label="测试结论" >
                             <Input    onChange={e => setIsGenerate(false)}    />
                         </Form.Item>
                     </Col>
