@@ -3,7 +3,7 @@ import { Layout, Menu } from 'antd';
 import { hasPermission, history } from 'libs';
 import styles from './layout.module.less';
 import routes from '../routes';
-import logo from './logo-spug-white.png';
+import logo from './gh-logo-spug-white.png';
 
 let selectedKey = window.location.pathname;
 const OpenKeysMap = {};

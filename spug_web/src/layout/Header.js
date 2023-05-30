@@ -12,7 +12,7 @@ import Notification from './Notification';
 import styles from './layout.module.less';
 import http from '../libs/http';
 import history from '../libs/history';
-import avatar from './avatar.png';
+import avatar from './gh-avatar.png';
 
 export default function (props) {
 
