@@ -47,7 +47,7 @@ function WebSSH(props) {
     const [sshMode] = useState(hasPermission('host.console.view'))
 
     useEffect(() => {
-        window.document.title = 'Spug web terminal'
+        window.document.title = '高鸿运营平台'
         window.addEventListener('beforeunload', leaveTips)
         fetchNodes()
         gStore.fetchUserSettings()
